@@ -50,3 +50,5 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/src/.vs/src/v16/Int Preview
+/src/.vs
