@@ -1,0 +1,18 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cc65-vice",
+            "request": "launch",
+            "name": "CC65 Vice Launch",
+            "buildCwd": "${workspaceFolder}",
+            "buildCommand": "make",
+            "stopOnEntry": true,
+            "viceCommand": "C:/Users/klauslo/OneDrive/C64/C-X16/Emulator/x16emu.exe",
+            "program": "${workspaceFolder}/spoonyassed.prg"
+        }
+    ]
+}
