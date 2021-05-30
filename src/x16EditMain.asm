@@ -31,6 +31,7 @@
 	.export		__debugLineNo
 	.export		__maxLine
 	.export		_DebugPrint
+	.export		_DebugPrintSlow
 	.export		_UpdateDocInfo
 	.export		_EnsureEditorLinesCapacity
 	.export		_Initialize
@@ -52,22 +53,20 @@
 
 .segment	"RODATA"
 
-L00EA:
+L00F7:
 	.byte	$43,$55,$52,$52,$45,$4E,$54,$CC,$49,$4E,$45,$D3,$45,$47,$4D,$45
 	.byte	$4E,$54,$20,$C1,$44,$44,$52,$45,$53,$53,$3A,$20,$25,$D8,$00
-L008B:
+L009C:
 	.byte	$CC,$49,$4E,$45,$53,$2D,$2A,$3A,$20,$25,$D8,$2F,$25,$D8,$00
-L0082:
-	.byte	$CB,$45,$59,$43,$4F,$44,$45,$3A,$20,$25,$30,$33,$44,$00
-L007B:
-	.byte	$C3,$4F,$4C,$55,$4D,$4E,$3A,$20,$25,$30,$33,$44,$00
-L0074:
-	.byte	$CC,$49,$4E,$45,$3A,$20,$25,$30,$34,$44,$00
 L0093:
+	.byte	$CB,$45,$59,$43,$4F,$44,$45,$3A,$20,$25,$30,$33,$44,$00
+L008C:
+	.byte	$C3,$4F,$4C,$55,$4D,$4E,$3A,$20,$25,$30,$33,$44,$00
+L0085:
+	.byte	$CC,$49,$4E,$45,$3A,$20,$25,$30,$34,$44,$00
+L00A4:
 	.byte	$4D,$41,$58,$CC,$D3,$3A,$20,$25,$44,$00
-L00E0:
-	.byte	$C6,$C6,$D3,$3A,$20,$25,$D8,$00
-L00CE:
+L00DF:
 	.byte	$25,$30,$34,$44,$3A,$00
 
 .segment	"BSS"
@@ -121,6 +120,54 @@ __maxLine:
 .endproc
 
 ; ---------------------------------------------------------------
+; void __near__ DebugPrintSlow (__near__ const unsigned char *, int)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_DebugPrintSlow: near
+
+.segment	"CODE"
+
+	jsr     pushax
+	lda     #$01
+	jsr     pusha
+	lda     __debugLineNo
+	jsr     _gotoxy
+	ldy     #$05
+	jsr     pushwysp
+	ldy     #$05
+	jsr     pushwysp
+	ldy     #$04
+	jsr     _printf
+	lda     #$00
+	sta     (sp)
+	ldy     #$01
+	sta     (sp),y
+L0075:	ldy     #$01
+	lda     (sp),y
+	tax
+	lda     (sp)
+	cmp     #$20
+	txa
+	sbc     #$4E
+	bvc     L007C
+	eor     #$80
+L007C:	bpl     L0076
+	ldy     #$01
+	lda     (sp),y
+	tax
+	lda     (sp)
+	ina
+	bne     L007E
+	inx
+L007E:	jsr     stax0sp
+	bra     L0075
+L0076:	jmp     incsp4
+
+.endproc
+
+; ---------------------------------------------------------------
 ; void __near__ UpdateDocInfo (int, int, unsigned char)
 ; ---------------------------------------------------------------
 
@@ -138,8 +185,8 @@ __maxLine:
 	jsr     pusha
 	lda     __statusBarLineNo
 	jsr     _gotoxy
-	lda     #<(L0074)
-	ldx     #>(L0074)
+	lda     #<(L0085)
+	ldx     #>(L0085)
 	jsr     pushax
 	ldy     #$0A
 	jsr     pushwysp
@@ -149,8 +196,8 @@ __maxLine:
 	jsr     pusha
 	lda     __statusBarLineNo
 	jsr     _gotoxy
-	lda     #<(L007B)
-	ldx     #>(L007B)
+	lda     #<(L008C)
+	ldx     #>(L008C)
 	jsr     pushax
 	ldy     #$08
 	jsr     pushwysp
@@ -160,8 +207,8 @@ __maxLine:
 	jsr     pusha
 	lda     __statusBarLineNo
 	jsr     _gotoxy
-	lda     #<(L0082)
-	ldx     #>(L0082)
+	lda     #<(L0093)
+	ldx     #>(L0093)
 	jsr     pushax
 	ldy     #$04
 	lda     (sp),y
@@ -178,8 +225,8 @@ __maxLine:
 	lda     #$0C
 	jsr     tosumula0
 	jsr     addeq0sp
-	lda     #<(L008B)
-	ldx     #>(L008B)
+	lda     #<(L009C)
+	ldx     #>(L009C)
 	jsr     pushax
 	ldy     #$05
 	jsr     pushwysp
@@ -192,8 +239,8 @@ __maxLine:
 	jsr     pusha
 	lda     __statusBarLineNo
 	jsr     _gotoxy
-	lda     #<(L0093)
-	ldx     #>(L0093)
+	lda     #<(L00A4)
+	ldx     #>(L00A4)
 	jsr     pushax
 	lda     __maxLineSegment
 	ldx     __maxLineSegment+1
@@ -228,12 +275,12 @@ __maxLine:
 	lda     __maxLine+1
 	sbc     __editorLinesCapacity+1
 	ora     tmp1
-	beq     L021B
-	bcs     L021D
-L021B:	lda     (sp)
+	beq     L0234
+	bcs     L0236
+L0234:	lda     (sp)
 	cmp     #$01
 	jne     incsp1
-L021D:	lda     __editorLinesCapacity
+L0236:	lda     __editorLinesCapacity
 	clc
 	adc     __editorLinesCapacity
 	sta     __editorLinesCapacity
@@ -284,9 +331,9 @@ L021D:	lda     __editorLinesCapacity
 	lda     __screenSize
 	sec
 	sbc     #$06
-	bcs     L021E
+	bcs     L0237
 	sec
-L021E:	sbc     #$01
+L0237:	sbc     #$01
 	sta     __screenSize
 	lda     __screenSize+1
 	sec
@@ -324,15 +371,15 @@ L021E:	sbc     #$01
 	jsr     pusha
 	lda     __textPos+3
 	jsr     _gotoxy
-	lda     #<(L00CE)
-	ldx     #>(L00CE)
+	lda     #<(L00DF)
+	ldx     #>(L00DF)
 	jsr     pushax
 	lda     __textPos
 	ldx     __textPos+1
 	ina
-	bne     L00D1
+	bne     L00E2
 	inx
-L00D1:	jsr     pushax
+L00E2:	jsr     pushax
 	ldy     #$04
 	jmp     _printf
 
@@ -351,7 +398,7 @@ L00D1:	jsr     pushax
 	jsr     decsp2
 	lda     __firstFreeSegment
 	ora     __firstFreeSegment+1
-	bne     L00D3
+	bne     L00E4
 	lda     __editorLineSegments
 	ldx     __editorLineSegments+1
 	jsr     pushax
@@ -365,12 +412,12 @@ L00D1:	jsr     pushax
 	lda     __maxLineSegment
 	ldx     __maxLineSegment+1
 	ina
-	bne     L00D9
+	bne     L00EA
 	inx
-L00D9:	sta     __maxLineSegment
+L00EA:	sta     __maxLineSegment
 	stx     __maxLineSegment+1
-	bra     L00DA
-L00D3:	lda     __firstFreeSegment
+	bra     L00EB
+L00E4:	lda     __firstFreeSegment
 	ldx     __firstFreeSegment+1
 	jsr     stax0sp
 	lda     __firstFreeSegment+1
@@ -383,13 +430,7 @@ L00D3:	lda     __firstFreeSegment
 	dey
 	lda     (ptr1),y
 	sta     __firstFreeSegment
-	lda     #<(L00E0)
-	ldx     #>(L00E0)
-	jsr     pushax
-	lda     __firstFreeSegment
-	ldx     __firstFreeSegment+1
-	jsr     _DebugPrint
-L00DA:	ldy     #$01
+L00EB:	ldy     #$01
 	lda     (sp),y
 	tax
 	lda     (sp)
@@ -407,20 +448,20 @@ L00DA:	ldy     #$01
 
 .segment	"CODE"
 
-	jsr     decsp4
+	jsr     decsp6
 	lda     #$00
 	jsr     _EnsureEditorLinesCapacity
 	jsr     _GetNextFreeLineSegment
 	jsr     stax0sp
-	lda     #<(L00EA)
-	ldx     #>(L00EA)
+	lda     #<(L00F7)
+	ldx     #>(L00F7)
 	jsr     pushax
-	ldy     #$03
+	ldy     #$05
 	lda     (sp),y
 	tax
 	dey
 	lda     (sp),y
-	jsr     _DebugPrint
+	jsr     _DebugPrintSlow
 	lda     __editorLines
 	ldx     __editorLines+1
 	jsr     pushax
@@ -440,23 +481,45 @@ L00DA:	ldy     #$01
 	txa
 	sta     (ptr1),y
 	lda     #$00
-	iny
+	ldy     #$05
 	sta     (sp),y
 	dey
-L0221:	sta     (sp),y
-	cmp     __textPos+2
-	bcs     L00F3
+L023A:	sta     (sp),y
+	cmp     __textPos+5
+	bcs     L0100
 	iny
 	lda     (sp),y
 	cmp     #$0A
-	bne     L00FA
+	bne     L0107
 	jsr     _GetNextFreeLineSegment
+	ldy     #$02
+	jsr     staxysp
+	ldy     #$01
+	lda     (sp),y
+	sta     ptr1+1
+	lda     (sp)
+	sta     ptr1
+	ldy     #$03
+	lda     (sp),y
+	tax
+	dey
+	lda     (sp),y
+	ldy     #$0A
+	sta     (ptr1),y
+	iny
+	txa
+	sta     (ptr1),y
+	ldy     #$03
+	lda     (sp),y
+	tax
+	dey
+	lda     (sp),y
 	jsr     stax0sp
 	lda     #$00
-	ldy     #$03
-	sta     (sp),y
-L00FA:	jsr     pushw0sp
 	ldy     #$05
+	sta     (sp),y
+L0107:	jsr     pushw0sp
+	ldy     #$07
 	lda     (sp),y
 	pha
 	ina
@@ -464,17 +527,17 @@ L00FA:	jsr     pushw0sp
 	pla
 	jsr     tosadda0
 	jsr     pushax
-	ldy     #$04
+	ldy     #$06
 	lda     (sp),y
 	tay
 	lda     __lineBuffer,y
 	ldy     #$00
 	jsr     staspidx
-	ldy     #$02
+	ldy     #$04
 	lda     (sp),y
 	ina
-	bra     L0221
-L00F3:	lda     __editorLines
+	bra     L023A
+L0100:	lda     __editorLines
 	ldx     __editorLines+1
 	jsr     pushax
 	lda     __textPos
@@ -483,9 +546,9 @@ L00F3:	lda     __editorLines
 	jsr     tosaddax
 	sta     ptr1
 	stx     ptr1+1
-	lda     __textPos+2
+	lda     __textPos+5
 	sta     (ptr1)
-	jmp     incsp4
+	jmp     incsp6
 
 .endproc
 
@@ -502,11 +565,11 @@ L00F3:	lda     __editorLines
 	jsr     decsp8
 	lda     __firstFreeSegment
 	ora     __firstFreeSegment+1
-	beq     L0109
+	beq     L011A
 	lda     __firstFreeSegment
 	ldx     __firstFreeSegment+1
-	bra     L0228
-L010E:	ldy     #$05
+	bra     L0241
+L011F:	ldy     #$05
 	lda     (sp),y
 	sta     ptr1+1
 	dey
@@ -517,7 +580,7 @@ L010E:	ldy     #$05
 	tax
 	dey
 	lda     (ptr1),y
-L0228:	ldy     #$04
+L0241:	ldy     #$04
 	jsr     staxysp
 	sta     ptr1
 	stx     ptr1+1
@@ -527,9 +590,9 @@ L0228:	ldy     #$04
 	dey
 	lda     (ptr1),y
 	cpx     #$00
-	bne     L010E
+	bne     L011F
 	cmp     #$00
-	bne     L010E
+	bne     L011F
 	ldy     #$07
 	jsr     pushwysp
 	lda     __editorLines
@@ -548,7 +611,8 @@ L0228:	ldy     #$04
 	lda     (ptr1),y
 	ldy     #$0A
 	jsr     staxspidx
-L0109:	lda     __editorLines
+	bra     L0129
+L011A:	lda     __editorLines
 	ldx     __editorLines+1
 	jsr     pushax
 	lda     __textPos
@@ -563,7 +627,7 @@ L0109:	lda     __editorLines
 	dey
 	lda     (ptr1),y
 	sta     __firstFreeSegment
-	lda     __textPos+2
+L0129:	lda     __textPos+2
 	sec
 	sbc     __textPos+4
 	sta     (sp)
@@ -605,22 +669,22 @@ L0109:	lda     __editorLines
 	jsr     _gotoxy
 	lda     #$00
 	ldy     #$01
-L0229:	sta     (sp),y
+L0242:	sta     (sp),y
 	cmp     #$FF
-	bcc     L022A
+	bcc     L0243
 	jmp     incsp8
-L022A:	lda     (sp),y
+L0243:	lda     (sp),y
 	ldy     #$03
 	cmp     (sp),y
-	bcs     L0132
+	bcs     L0144
 	lda     #<(__lineBuffer)
 	ldx     #>(__lineBuffer)
 	ldy     #$01
 	clc
 	adc     (sp),y
-	bcc     L0136
+	bcc     L0148
 	inx
-L0136:	jsr     pushax
+L0148:	jsr     pushax
 	ldy     #$0B
 	jsr     pushwysp
 	ldy     #$06
@@ -638,7 +702,7 @@ L0136:	jsr     pushax
 	ldy     #$02
 	lda     (sp),y
 	cmp     #$0A
-	bne     L013F
+	bne     L0151
 	ldy     #$07
 	lda     (sp),y
 	sta     ptr1+1
@@ -655,16 +719,16 @@ L0136:	jsr     pushax
 	lda     #$00
 	ldy     #$02
 	sta     (sp),y
-	bra     L013F
-L0132:	ldy     #$01
+	bra     L0151
+L0144:	ldy     #$01
 	lda     (sp),y
 	tay
 	lda     #$20
 	sta     __lineBuffer,y
-L013F:	ldy     #$01
+L0151:	ldy     #$01
 	lda     (sp),y
 	cmp     (sp)
-	bcc     L012C
+	bcc     L013E
 	ldy     #$01
 	lda     (sp),y
 	jsr     pusha0
@@ -672,20 +736,20 @@ L013F:	ldy     #$01
 	lda     (sp),y
 	clc
 	adc     __screenSize
-	bcc     L0222
+	bcc     L023B
 	ldx     #$01
-L0222:	jsr     tosicmp
-	bcc     L0145
-	bne     L012C
-L0145:	ldy     #$01
+L023B:	jsr     tosicmp
+	bcc     L0157
+	bne     L013E
+L0157:	ldy     #$01
 	lda     (sp),y
 	tay
 	lda     __lineBuffer,y
 	jsr     _cputc
-L012C:	ldy     #$01
+L013E:	ldy     #$01
 	lda     (sp),y
 	ina
-	jmp     L0229
+	jmp     L0242
 
 .endproc
 
@@ -728,38 +792,38 @@ L012C:	ldy     #$01
 	jsr     _gotoxy
 	lda     #$00
 	ldy     #$02
-L0235:	sta     (sp),y
+L024E:	sta     (sp),y
 	cmp     #$FF
-	bcs     L0234
+	bcs     L024D
 	lda     (sp),y
 	dey
 	cmp     (sp),y
-	bcc     L0158
+	bcc     L016A
 	iny
 	lda     (sp),y
 	sec
 	sbc     (sp)
-	bcc     L0232
-	bne     L0158
-L0232:	ldy     #$02
+	bcc     L024B
+	bne     L016A
+L024B:	ldy     #$02
 	lda     (sp),y
 	sec
 	sbc     __textPos+5
 	sta     tmp1
 	lda     tmp1
-	beq     L0233
-	bcs     L0162
-L0233:	lda     (sp),y
+	beq     L024C
+	bcs     L0174
+L024C:	lda     (sp),y
 	tay
 	lda     __lineBuffer,y
-	bra     L022D
-L0162:	lda     #$20
-L022D:	jsr     _cputc
-L0158:	ldy     #$02
+	bra     L0246
+L0174:	lda     #$20
+L0246:	jsr     _cputc
+L016A:	ldy     #$02
 	lda     (sp),y
 	ina
-	bra     L0235
-L0234:	lda     __textPos+4
+	bra     L024E
+L024D:	lda     __textPos+4
 	clc
 	adc     #$06
 	jsr     pusha
@@ -780,11 +844,11 @@ L0234:	lda     __textPos+4
 .segment	"CODE"
 
 	lda     __textPos+2
-	beq     L0174
+	beq     L0186
 	dec     __textPos+2
 	dec     __textPos+4
 	rts
-L0174:	rts
+L0186:	rts
 
 .endproc
 
@@ -800,7 +864,7 @@ L0174:	rts
 
 	lda     __textPos+2
 	cmp     __textPos+5
-	bcs     L017D
+	bcs     L018F
 	inc     __textPos+2
 	inc     __textPos+4
 	lda     __textPos+4
@@ -808,16 +872,16 @@ L0174:	rts
 	lda     __screenSize
 	sec
 	sbc     #$01
-	bcs     L017F
+	bcs     L0191
 	ldx     #$FF
-L017F:	jsr     tosicmp
-	bcc     L017D
-	beq     L017D
+L0191:	jsr     tosicmp
+	bcc     L018F
+	beq     L018F
 	lda     __screenSize
 	sec
 	sbc     #$01
 	sta     __textPos+4
-L017D:	rts
+L018F:	rts
 
 .endproc
 
@@ -835,10 +899,10 @@ L017D:	rts
 	jsr     decsp1
 	lda     __textPos+2
 	cmp     #$FF
-	bcc     L023C
+	bcc     L0255
 	jmp     incsp2
-L023C:	cmp     __textPos+5
-	bne     L0186
+L0255:	cmp     __textPos+5
+	bne     L0198
 	ldy     #$01
 	lda     (sp),y
 	ldy     __textPos+2
@@ -846,31 +910,29 @@ L023C:	cmp     __textPos+5
 	inc     __textPos+2
 	lda     __textPos+4
 	cmp     __screenSize
-	bcs     L023B
+	bcs     L0254
 	ldy     #$01
 	lda     (sp),y
 	jsr     _cputc
 	inc     __textPos+4
-	bra     L023B
-L0186:	jsr     decsp1
+	bra     L0254
+L0198:	jsr     decsp1
 	lda     __textPos+5
 	ldy     #$01
 	sta     (sp),y
 	cmp     #$FF
-	bne     L0238
+	bne     L0251
 	lda     (sp),y
 	dea
 	sta     (sp),y
-L0238:	lda     (sp),y
+L0251:	lda     (sp),y
 	sta     (sp)
 	ldx     #$00
-L023A:	lda     (sp)
-	cmp     __textPos+2
-	bcc     L0199
+L0253:	lda     (sp)
 	ina
-	bne     L01A2
+	bne     L01B3
 	inx
-L01A2:	clc
+L01B3:	clc
 	adc     #<(__lineBuffer)
 	tay
 	txa
@@ -884,18 +946,20 @@ L01A2:	clc
 	lda     __lineBuffer,y
 	ldy     #$00
 	jsr     staspidx
+	lda     (sp)
+	beq     L01AB
 	ldx     #$00
 	lda     (sp)
 	dea
 	sta     (sp)
-	bra     L023A
-L0199:	ldy     #$02
+	bra     L0253
+L01AB:	ldy     #$02
 	lda     (sp),y
 	ldy     __textPos+2
 	sta     __lineBuffer,y
 	jsr     _LineBufferToCurrentScreenLine
 	jsr     incsp1
-L023B:	inc     __textPos+5
+L0254:	inc     __textPos+5
 	jsr     _CursorRight
 	jmp     incsp2
 
@@ -915,13 +979,13 @@ L023B:	inc     __textPos+5
 	lda     __textPos+2
 	sta     (sp)
 	ldx     #$00
-L023E:	lda     (sp)
+L0257:	lda     (sp)
 	cmp     __textPos+5
-	bcs     L023F
+	bcs     L0258
 	ina
-	bne     L01B8
+	bne     L01CB
 	inx
-L01B8:	clc
+L01CB:	clc
 	adc     #<(__lineBuffer)
 	tay
 	txa
@@ -939,8 +1003,8 @@ L01B8:	clc
 	lda     (sp)
 	ina
 	sta     (sp)
-	bra     L023E
-L023F:	dec     __textPos+5
+	bra     L0257
+L0258:	dec     __textPos+5
 	jsr     _LineBufferToCurrentScreenLine
 	jmp     incsp1
 
@@ -957,10 +1021,10 @@ L023F:	dec     __textPos+5
 .segment	"CODE"
 
 	lda     __textPos+2
-	beq     L01BF
+	beq     L01D2
 	jsr     _CursorLeft
 	jmp     _DeleteChar
-L01BF:	rts
+L01D2:	rts
 
 .endproc
 
@@ -979,11 +1043,22 @@ L01BF:	rts
 	ldx     __textPos+1
 	sec
 	sbc     #$01
-	bcs     L01C7
+	bcs     L01DA
 	dex
-L01C7:	sta     __textPos
+L01DA:	sta     __textPos
 	stx     __textPos+1
 	dec     __textPos+3
+	lda     __editorLines
+	ldx     __editorLines+1
+	jsr     pushax
+	lda     __textPos
+	ldx     __textPos+1
+	jsr     mulax3
+	jsr     tosaddax
+	sta     ptr1
+	stx     ptr1+1
+	lda     (ptr1)
+	sta     __textPos+5
 	jsr     _GetBufferFromEditorMemoryAndPrint
 	lda     __textPos+4
 	jsr     pusha
@@ -1005,24 +1080,35 @@ L01C7:	sta     __textPos
 	lda     __maxLine
 	ldx     __maxLine+1
 	cpx     __textPos+1
-	bne     L0241
+	bne     L025A
 	cmp     __textPos
-	beq     L01CD
-L0241:	jsr     _SaveBufferToEditorMemory
+	beq     L01E3
+L025A:	jsr     _SaveBufferToEditorMemory
 	lda     __textPos
 	ldx     __textPos+1
 	ina
-	bne     L01D2
+	bne     L01E8
 	inx
-L01D2:	sta     __textPos
+L01E8:	sta     __textPos
 	stx     __textPos+1
 	inc     __textPos+3
+	lda     __editorLines
+	ldx     __editorLines+1
+	jsr     pushax
+	lda     __textPos
+	ldx     __textPos+1
+	jsr     mulax3
+	jsr     tosaddax
+	sta     ptr1
+	stx     ptr1+1
+	lda     (ptr1)
+	sta     __textPos+5
 	jsr     _GetBufferFromEditorMemoryAndPrint
 	lda     __textPos+4
 	jsr     pusha
 	lda     __textPos+3
 	jmp     _gotoxy
-L01CD:	rts
+L01E3:	rts
 
 .endproc
 
@@ -1039,35 +1125,35 @@ L01CD:	rts
 	lda     __maxLine
 	ldx     __maxLine+1
 	cpx     __textPos+1
-	bne     L01D9
+	bne     L01F2
 	cmp     __textPos
-	bne     L01D9
+	bne     L01F2
 	jsr     _SaveBufferToEditorMemory
 	lda     __maxLine
 	ldx     __maxLine+1
 	ina
-	bne     L01DD
+	bne     L01F6
 	inx
-L01DD:	sta     __maxLine
+L01F6:	sta     __maxLine
 	stx     __maxLine+1
 	lda     __textPos
 	ldx     __textPos+1
 	ina
-	bne     L01DF
+	bne     L01F8
 	inx
-L01DF:	sta     __textPos
+L01F8:	sta     __textPos
 	stx     __textPos+1
 	stz     __textPos+4
 	stz     __textPos+2
 	stz     __textPos+5
 	lda     __textPos+3
 	cmp     __screenSize+1
-	bcs     L01E6
+	bcs     L01FF
 	inc     __textPos+3
 	jmp     _PrintLineNumber
-L01E6:	jsr     _Invalidate
+L01FF:	jsr     _Invalidate
 	jmp     _PrintLineNumber
-L01D9:	stz     __textPos+4
+L01F2:	stz     __textPos+4
 	stz     __textPos+2
 	jmp     _CursorDown
 
@@ -1086,7 +1172,7 @@ L01D9:	stz     __textPos+4
 	jsr     decsp1
 	jsr     _Initialize
 	jsr     _PrintLineNumber
-L01F5:	jsr     decsp4
+L020E:	jsr     decsp4
 	lda     __textPos
 	ldy     #$02
 	sta     (sp),y
@@ -1104,41 +1190,41 @@ L01F5:	jsr     decsp4
 	jsr     _cgetc
 	sta     (sp)
 	cmp     #$0D
-	bne     L0244
+	bne     L025D
 	jsr     _HandleReturnKey
-	bra     L024F
-L0244:	lda     (sp)
+	bra     L0268
+L025D:	lda     (sp)
 	cmp     #$14
-	bne     L0246
+	bne     L025F
 	jsr     _Backspace
-	bra     L024F
-L0246:	lda     (sp)
+	bra     L0268
+L025F:	lda     (sp)
 	cmp     #$11
-	bne     L0248
+	bne     L0261
 	jsr     _CursorDown
-	bra     L024F
-L0248:	lda     (sp)
+	bra     L0268
+L0261:	lda     (sp)
 	cmp     #$91
-	bne     L024A
+	bne     L0263
 	lda     __textPos+3
-	beq     L024F
+	beq     L0268
 	jsr     _CursorUp
-	bra     L024F
-L024A:	lda     (sp)
+	bra     L0268
+L0263:	lda     (sp)
 	cmp     #$9D
-	bne     L024C
+	bne     L0265
 	jsr     _CursorLeft
-	bra     L024F
-L024C:	lda     (sp)
+	bra     L0268
+L0265:	lda     (sp)
 	cmp     #$1D
-	bne     L024D
+	bne     L0266
 	jsr     _CursorRight
-	bra     L024F
-L024D:	lda     (sp)
+	bra     L0268
+L0266:	lda     (sp)
 	jsr     _InsertChar
-L024F:	lda     (sp)
+L0268:	lda     (sp)
 	cmp     #$03
-	bne     L01F5
+	bne     L020E
 	jmp     incsp1
 
 .endproc

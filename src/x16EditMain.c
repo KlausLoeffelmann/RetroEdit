@@ -102,6 +102,15 @@ void DebugPrint(const char *text, int value)
 	printf(text, value);
 }
 
+void DebugPrintSlow(const char *text, int value)
+{
+	gotoxy(1, _debugLineNo);
+	printf(text, value);
+	for (value = 0; value < 20000; value++)
+	{
+	}
+}
+
 void UpdateDocInfo(int line, int column, char currentChar)
 {
 	LineSegment *tmpLines = _editorLineSegments;
@@ -179,7 +188,6 @@ LineSegment *GetNextFreeLineSegment()
 	{
 		nextFreeSegment = _firstFreeSegment;
 		_firstFreeSegment = _firstFreeSegment->nextSegment;
-		DebugPrint("FFS: %X", (int)_firstFreeSegment);
 	}
 
 	return nextFreeSegment;
@@ -190,26 +198,28 @@ void SaveBufferToEditorMemory()
 	unsigned char y;
 	unsigned char i;
 
-	LineSegment *nextLineSegment;
+	LineSegment *nextLineSegment, *currentLineSegment;
 
 	// We need to expand the collection with LineStart pointers.
 	EnsureEditorLinesCapacity(0);
-	nextLineSegment = GetNextFreeLineSegment();
-	DebugPrint("currentLineSegment Address: %X", (int)nextLineSegment);
+	currentLineSegment = GetNextFreeLineSegment();
+	DebugPrintSlow("currentLineSegment Address: %X", (int)nextLineSegment);
 
-	_editorLines[_textPos.Line].firstLineSegment = nextLineSegment;
+	_editorLines[_textPos.Line].firstLineSegment = currentLineSegment;
 
 	y = 0;
-	for (i = 0; i < _textPos.Column; i++)
+	for (i = 0; i < _textPos.LineLength; i++)
 	{
 		if (y == SEGMENT_TEXT_LENGTH)
 		{
 			nextLineSegment = GetNextFreeLineSegment();
+			currentLineSegment->nextSegment = nextLineSegment;
+			currentLineSegment = nextLineSegment;
 			y = 0;
 		}
-		nextLineSegment->text[y++] = _lineBuffer[i];
+		currentLineSegment->text[y++] = _lineBuffer[i];
 	}
-	_editorLines[_textPos.Line].length = _textPos.Column;
+	_editorLines[_textPos.Line].length = _textPos.LineLength;
 }
 
 void GetBufferFromEditorMemoryAndPrint()
@@ -238,10 +248,12 @@ void GetBufferFromEditorMemoryAndPrint()
 		// the last edit which resulted in less segments then there were before.
 		tmpLineSegment->nextSegment = _editorLines[_textPos.Line].firstLineSegment;
 	}
-
-	// If we adding new lines, this will stay NULL. If we move around and edit,
-	// this leads to reusing the existing segments.
-	_firstFreeSegment = _editorLines[_textPos.Line].firstLineSegment;
+	else
+	{
+		// If we adding new lines, this will stay NULL. If we move around and edit,
+		// this leads to reusing the existing segments.
+		_firstFreeSegment = _editorLines[_textPos.Line].firstLineSegment;
+	}
 
 	columnOffset = _textPos.Column - _textPos.ScreenColumn;
 	currentLineSegment = _editorLines[_textPos.Line].firstLineSegment;
@@ -357,16 +369,23 @@ void InsertChar(char currentChar)
 		{
 			// We need to insert into the buffer and reprint and scroll the remainer of the line to the right.
 			unsigned char i;
-			effectiveLineLength=_textPos.LineLength;
-			if (effectiveLineLength==MAX_LINE_LENGTH)
+			effectiveLineLength = _textPos.LineLength;
+			if (effectiveLineLength == MAX_LINE_LENGTH)
 			{
 				effectiveLineLength--;
 			}
 
-			for (i = effectiveLineLength; i >= _textPos.Column; i--)
+			for (i = effectiveLineLength;; i--)
 			{
 				_lineBuffer[i + 1] = _lineBuffer[i];
+
+				// The underflow can't be handled correctly inside a for loop.
+				if (i == 0)
+				{
+					break;
+				}
 			}
+
 			_lineBuffer[_textPos.Column] = currentChar;
 			LineBufferToCurrentScreenLine();
 		}
@@ -408,6 +427,7 @@ void CursorUp()
 	SaveBufferToEditorMemory();
 	_textPos.Line--;
 	_textPos.ScreenLine--;
+	_textPos.LineLength = (_editorLines + _textPos.Line)->length;
 	GetBufferFromEditorMemoryAndPrint();
 	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine);
 }
@@ -425,6 +445,7 @@ void CursorDown()
 	SaveBufferToEditorMemory();
 	_textPos.Line++;
 	_textPos.ScreenLine++;
+	_textPos.LineLength = (_editorLines + _textPos.Line)->length;
 	GetBufferFromEditorMemoryAndPrint();
 	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine);
 }
