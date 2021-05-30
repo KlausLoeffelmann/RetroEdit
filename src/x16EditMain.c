@@ -66,14 +66,14 @@ struct TextPosition
 // Bytes.
 char _lineBuffer[255];
 
-// Pointer to the array holding the point to the start 
+// Pointer to the array holding the point to the start
 // and the length of each line.
 EditorLine *_editorLines;
 
 // Count of EditorLine pointers.
 unsigned int _editorLinesCapacity;
 
-// The pointer to the EditorLineSegments holding 
+// The pointer to the EditorLineSegments holding
 // the actual text in memory.
 LineSegment *_editorLineSegments;
 
@@ -115,7 +115,7 @@ void UpdateDocInfo(int line, int column, char currentChar)
 
 	gotoxy(43, _statusBarLineNo);
 	tmpLines += _maxLineSegment;
-	printf("Lines-*: %X/%X", tmpLines, _editorLines);
+	printf("Lines-*: %X/%X", tmpLines, _firstFreeSegment);
 
 	gotoxy(62, _statusBarLineNo);
 	printf("maxLS: %d", _maxLineSegment);
@@ -179,6 +179,7 @@ LineSegment *GetNextFreeLineSegment()
 	{
 		nextFreeSegment = _firstFreeSegment;
 		_firstFreeSegment = _firstFreeSegment->nextSegment;
+		DebugPrint("FFS: %X", (int)_firstFreeSegment);
 	}
 
 	return nextFreeSegment;
@@ -191,23 +192,8 @@ void SaveBufferToEditorMemory()
 
 	LineSegment *nextLineSegment;
 
-	// This needs to be redone. Does Saving needs to be free the line already?
-	// Or should navigating to a new line only free that line after copying
-	// it into the curent-line-buffer?
-
+	// We need to expand the collection with LineStart pointers.
 	EnsureEditorLinesCapacity(0);
-
-	// Free the line, if it is not a new line we're saving.
-	// This is either NULL or what ever segment we have already allocated.
-	// It is supposed to be NULL when we appended a new line at the end.
-	if (_firstFreeSegment != NULL)
-	{
-		// We need to traverse everything until its hit NULL
-		// and then link that segment with the segments occupied
-		// by this line:
-	}
-	_firstFreeSegment=_editorLines[_textPos.Line].firstLineSegment;
-
 	nextLineSegment = GetNextFreeLineSegment();
 	DebugPrint("currentLineSegment Address: %X", (int)nextLineSegment);
 
@@ -228,11 +214,34 @@ void SaveBufferToEditorMemory()
 
 void GetBufferFromEditorMemoryAndPrint()
 {
-	LineSegment *currentLineSegment;
+	LineSegment *currentLineSegment, *tmpLineSegment;
 	unsigned char lineLength;
 	unsigned char charpoint;
 	unsigned char i;
 	unsigned char columnOffset;
+
+	// Free the line, if it is not a new line we're saving.
+	// This is either NULL or what ever segment we have already allocated.
+	// It is supposed to be NULL when we appended a new line at the end.
+	if (_firstFreeSegment != NULL)
+	{
+		// We need to traverse everything until its hit NULL
+		// and then link that segment with the segments occupied
+		// by this line:
+		tmpLineSegment = _firstFreeSegment;
+		while (tmpLineSegment->nextSegment != NULL)
+		{
+			tmpLineSegment = tmpLineSegment->nextSegment;
+		}
+
+		// This is, because there might have been free segments left from
+		// the last edit which resulted in less segments then there were before.
+		tmpLineSegment->nextSegment = _editorLines[_textPos.Line].firstLineSegment;
+	}
+
+	// If we adding new lines, this will stay NULL. If we move around and edit,
+	// this leads to reusing the existing segments.
+	_firstFreeSegment = _editorLines[_textPos.Line].firstLineSegment;
 
 	columnOffset = _textPos.Column - _textPos.ScreenColumn;
 	currentLineSegment = _editorLines[_textPos.Line].firstLineSegment;
@@ -273,59 +282,31 @@ void Invalidate()
 void LineBufferToCurrentScreenLine()
 {
 	unsigned char i;
-	gotoxy(0, _textPos.ScreenLine);
+	unsigned char leftTextWindowPos, rightTextWindowPos;
 
-	for (i = 0; i < _screenSize.Width; i++)
+	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
+	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
+
+	gotoxy(LINE_NUMBER_OFFSET, _textPos.ScreenLine);
+
+	for (i = 0; i < MAX_LINE_LENGTH; i++)
 	{
-		cputc(_lineBuffer[i]);
+		if (i >= leftTextWindowPos && i <= rightTextWindowPos)
+		{
+			if (i <= _textPos.LineLength)
+			{
+				cputc(_lineBuffer[i]);
+			}
+			else
+			{
+				cputc(' ');
+			}
+		}
 	}
 
 	gotoxy(
 		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
 		_textPos.ScreenLine);
-}
-
-void InsertChar(char currentChar)
-{
-	if (_textPos.Column < MAX_LINE_LENGTH)
-	{
-		if (_textPos.LineLength == _textPos.Column)
-		{
-			_lineBuffer[_textPos.Column] = currentChar;
-			_textPos.Column++;
-			if (_textPos.ScreenColumn < _screenSize.Width)
-			{
-				cputc(currentChar);
-				_textPos.ScreenColumn++;
-			}
-		}
-		else
-		{
-			// We need to insert into the buffer and reprint and scroll the remainer of the line to the right.
-			unsigned char i;
-			for (i = _textPos.LineLength; i > _textPos.Column; i--)
-			{
-				_lineBuffer[i + 1] = _lineBuffer[i];
-			}
-			_lineBuffer[_textPos.Column] = currentChar;
-			LineBufferToCurrentScreenLine();
-		}
-
-		// The line is getting longer in both cases.
-		_textPos.LineLength++;
-	}
-}
-
-void DeleteChar()
-{
-	unsigned char i;
-	for (i = _textPos.Column; i < _textPos.LineLength; i++)
-	{
-		_lineBuffer[i + 1] = _lineBuffer[i];
-	}
-
-	_textPos.LineLength--;
-	LineBufferToCurrentScreenLine();
 }
 
 void CursorLeft()
@@ -356,6 +337,58 @@ void CursorRight()
 	}
 }
 
+void InsertChar(char currentChar)
+{
+	unsigned char effectiveLineLength;
+
+	if (_textPos.Column < MAX_LINE_LENGTH)
+	{
+		if (_textPos.LineLength == _textPos.Column)
+		{
+			_lineBuffer[_textPos.Column] = currentChar;
+			_textPos.Column++;
+			if (_textPos.ScreenColumn < _screenSize.Width)
+			{
+				cputc(currentChar);
+				_textPos.ScreenColumn++;
+			}
+		}
+		else
+		{
+			// We need to insert into the buffer and reprint and scroll the remainer of the line to the right.
+			unsigned char i;
+			effectiveLineLength=_textPos.LineLength;
+			if (effectiveLineLength==MAX_LINE_LENGTH)
+			{
+				effectiveLineLength--;
+			}
+
+			for (i = effectiveLineLength; i >= _textPos.Column; i--)
+			{
+				_lineBuffer[i + 1] = _lineBuffer[i];
+			}
+			_lineBuffer[_textPos.Column] = currentChar;
+			LineBufferToCurrentScreenLine();
+		}
+
+		// The line is getting longer in both cases.
+		_textPos.LineLength++;
+		CursorRight();
+	}
+}
+
+void DeleteChar()
+{
+	unsigned char i;
+	for (i = _textPos.Column; i < _textPos.LineLength; i++)
+	{
+		_lineBuffer[i + 1] = _lineBuffer[i];
+	}
+
+	_textPos.LineLength--;
+	LineBufferToCurrentScreenLine();
+}
+
 void Backspace()
 {
 	if (_textPos.Column > 0)
@@ -381,7 +414,14 @@ void CursorUp()
 
 void CursorDown()
 {
+	// We cannot go beyond the text end.
+	if (_textPos.Line == _maxLine)
+	{
+		return;
+	}
+
 	// TODO: Scrolling.
+
 	SaveBufferToEditorMemory();
 	_textPos.Line++;
 	_textPos.ScreenLine++;
