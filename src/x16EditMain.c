@@ -380,7 +380,7 @@ void InsertChar(char currentChar)
 				_lineBuffer[i + 1] = _lineBuffer[i];
 
 				// The underflow can't be handled correctly inside a for loop.
-				if (i == 0)
+				if (i == _textPos.Column)
 				{
 					break;
 				}

@@ -899,9 +899,9 @@ L018F:	rts
 	jsr     decsp1
 	lda     __textPos+2
 	cmp     #$FF
-	bcc     L0255
+	bcc     L0256
 	jmp     incsp2
-L0255:	cmp     __textPos+5
+L0256:	cmp     __textPos+5
 	bne     L0198
 	ldy     #$01
 	lda     (sp),y
@@ -910,25 +910,25 @@ L0255:	cmp     __textPos+5
 	inc     __textPos+2
 	lda     __textPos+4
 	cmp     __screenSize
-	bcs     L0254
+	bcs     L0255
 	ldy     #$01
 	lda     (sp),y
 	jsr     _cputc
 	inc     __textPos+4
-	bra     L0254
+	bra     L0255
 L0198:	jsr     decsp1
 	lda     __textPos+5
 	ldy     #$01
 	sta     (sp),y
 	cmp     #$FF
-	bne     L0251
+	bne     L0252
 	lda     (sp),y
 	dea
 	sta     (sp),y
-L0251:	lda     (sp),y
+L0252:	lda     (sp),y
 	sta     (sp)
 	ldx     #$00
-L0253:	lda     (sp)
+L0254:	lda     (sp)
 	ina
 	bne     L01B3
 	inx
@@ -947,19 +947,20 @@ L01B3:	clc
 	ldy     #$00
 	jsr     staspidx
 	lda     (sp)
+	cmp     __textPos+2
 	beq     L01AB
 	ldx     #$00
 	lda     (sp)
 	dea
 	sta     (sp)
-	bra     L0253
+	bra     L0254
 L01AB:	ldy     #$02
 	lda     (sp),y
 	ldy     __textPos+2
 	sta     __lineBuffer,y
 	jsr     _LineBufferToCurrentScreenLine
 	jsr     incsp1
-L0254:	inc     __textPos+5
+L0255:	inc     __textPos+5
 	jsr     _CursorRight
 	jmp     incsp2
 
@@ -979,9 +980,9 @@ L0254:	inc     __textPos+5
 	lda     __textPos+2
 	sta     (sp)
 	ldx     #$00
-L0257:	lda     (sp)
+L0258:	lda     (sp)
 	cmp     __textPos+5
-	bcs     L0258
+	bcs     L0259
 	ina
 	bne     L01CB
 	inx
@@ -1003,8 +1004,8 @@ L01CB:	clc
 	lda     (sp)
 	ina
 	sta     (sp)
-	bra     L0257
-L0258:	dec     __textPos+5
+	bra     L0258
+L0259:	dec     __textPos+5
 	jsr     _LineBufferToCurrentScreenLine
 	jmp     incsp1
 
@@ -1080,10 +1081,10 @@ L01DA:	sta     __textPos
 	lda     __maxLine
 	ldx     __maxLine+1
 	cpx     __textPos+1
-	bne     L025A
+	bne     L025B
 	cmp     __textPos
 	beq     L01E3
-L025A:	jsr     _SaveBufferToEditorMemory
+L025B:	jsr     _SaveBufferToEditorMemory
 	lda     __textPos
 	ldx     __textPos+1
 	ina
@@ -1190,39 +1191,39 @@ L020E:	jsr     decsp4
 	jsr     _cgetc
 	sta     (sp)
 	cmp     #$0D
-	bne     L025D
+	bne     L025E
 	jsr     _HandleReturnKey
-	bra     L0268
-L025D:	lda     (sp)
+	bra     L0269
+L025E:	lda     (sp)
 	cmp     #$14
-	bne     L025F
+	bne     L0260
 	jsr     _Backspace
-	bra     L0268
-L025F:	lda     (sp)
+	bra     L0269
+L0260:	lda     (sp)
 	cmp     #$11
-	bne     L0261
+	bne     L0262
 	jsr     _CursorDown
-	bra     L0268
-L0261:	lda     (sp)
+	bra     L0269
+L0262:	lda     (sp)
 	cmp     #$91
-	bne     L0263
+	bne     L0264
 	lda     __textPos+3
-	beq     L0268
+	beq     L0269
 	jsr     _CursorUp
-	bra     L0268
-L0263:	lda     (sp)
+	bra     L0269
+L0264:	lda     (sp)
 	cmp     #$9D
-	bne     L0265
-	jsr     _CursorLeft
-	bra     L0268
-L0265:	lda     (sp)
-	cmp     #$1D
 	bne     L0266
-	jsr     _CursorRight
-	bra     L0268
+	jsr     _CursorLeft
+	bra     L0269
 L0266:	lda     (sp)
+	cmp     #$1D
+	bne     L0267
+	jsr     _CursorRight
+	bra     L0269
+L0267:	lda     (sp)
 	jsr     _InsertChar
-L0268:	lda     (sp)
+L0269:	lda     (sp)
 	cmp     #$03
 	bne     L020E
 	jmp     incsp1
