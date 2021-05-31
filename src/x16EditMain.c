@@ -11,6 +11,7 @@
 #define KEY_CURRIGHT 29
 #define KEY_ESC 3
 #define KEY_BACKSPACE 20
+#define KEY_DELETE 148
 #define KEY_TAB 9
 
 #define SEGMENT_TEXT_LENGTH 10
@@ -399,13 +400,23 @@ void InsertChar(char currentChar)
 void DeleteChar()
 {
 	unsigned char i;
-	for (i = _textPos.Column; i < _textPos.LineLength; i++)
-	{
-		_lineBuffer[i + 1] = _lineBuffer[i];
-	}
 
-	_textPos.LineLength--;
-	LineBufferToCurrentScreenLine();
+	if (_textPos.Column < _textPos.LineLength)
+	{
+
+		for (i = _textPos.Column; i < _textPos.LineLength; i++)
+		{
+			_lineBuffer[i] = _lineBuffer[i + 1];
+		}
+
+		_lineBuffer[_textPos.LineLength - 1] = ' ';
+		_textPos.LineLength--;
+		LineBufferToCurrentScreenLine();
+	}
+	else
+	{
+		// Delete line, if not in last line.
+	}
 }
 
 void Backspace()
@@ -486,8 +497,8 @@ void main(void)
 
 	do
 	{
-		UpdateDocInfo(_textPos.Line, _textPos.Column, currentChar);
 
+		UpdateDocInfo(_textPos.Line, _textPos.Column, currentChar);
 		currentChar = cgetc();
 
 		if (currentChar == KEY_RETURN)
@@ -497,6 +508,10 @@ void main(void)
 		else if (currentChar == KEY_BACKSPACE)
 		{
 			Backspace();
+		}
+		else if (currentChar == KEY_DELETE)
+		{
+			DeleteChar();
 		}
 		else if (currentChar == KEY_CURDOWN)
 		{
