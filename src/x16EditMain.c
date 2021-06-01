@@ -12,6 +12,7 @@
 #define KEY_ESC 3
 #define KEY_BACKSPACE 20
 #define KEY_DELETE 148
+#define KEY_ERASELINE 5
 #define KEY_TAB 9
 
 #define SEGMENT_TEXT_LENGTH 10
@@ -66,6 +67,7 @@ struct TextPosition
 // it's getting transferred into segments of SEGMENT_TEXT_LENGTH
 // Bytes.
 char _lineBuffer[255];
+char _workingLineBuffer[255];
 
 // Pointer to the array holding the point to the start
 // and the length of each line.
@@ -204,8 +206,6 @@ void SaveBufferToEditorMemory()
 	// We need to expand the collection with LineStart pointers.
 	EnsureEditorLinesCapacity(0);
 	currentLineSegment = GetNextFreeLineSegment();
-	DebugPrintSlow("currentLineSegment Address: %X", (int)nextLineSegment);
-
 	_editorLines[_textPos.Line].firstLineSegment = currentLineSegment;
 
 	y = 0;
@@ -287,9 +287,77 @@ void GetBufferFromEditorMemoryAndPrint()
 	}
 }
 
-// Repaints the whole screen
+// Copy the whole segment chain of a line into the working line buffer
+// and returns the length of that line.
+unsigned int GetWorkingLine(unsigned int lineNumber)
+{
+	unsigned char i, lineLength, charpoint;
+	LineSegment *currentLineSegment;
+
+	currentLineSegment = _editorLines[lineNumber].firstLineSegment;
+	lineLength = _editorLines[lineNumber].length;
+	charpoint = 0;
+
+	for (i = 0; i < MAX_LINE_LENGTH; i++)
+	{
+		if (i < lineLength)
+		{
+			_workingLineBuffer[i] = currentLineSegment->text[charpoint++];
+			if (charpoint == SEGMENT_TEXT_LENGTH)
+			{
+				currentLineSegment = currentLineSegment->nextSegment;
+				charpoint = 0;
+			}
+		}
+		else
+		{
+			_workingLineBuffer[i] = 32;
+		}
+	}
+
+	return lineLength;
+}
+
+// Repaints the whole screen.
 void Invalidate()
 {
+	unsigned char i, line, startLine, endLine, currentLineLength;
+	unsigned char leftTextWindowPos, rightTextWindowPos;
+
+	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
+	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
+
+	startLine = _textPos.Line - _textPos.ScreenLine;
+	if (_maxLine < (_screenSize.Height - 2))
+	{
+		endLine = startLine + _maxLine;
+	}
+	else
+	{
+		endLine = startLine + _screenSize.Height - 2;
+	}
+
+	for (line = startLine; line < endLine; line++)
+	{
+		// Print Linenumber.
+		gotoxy(0, _textPos.ScreenLine);
+		printf("%04d:", _textPos.Line + 1);
+
+		gotoxy(LINE_NUMBER_OFFSET, line);
+		currentLineLength = GetWorkingLine(line);
+
+		for (i = 0; i < MAX_LINE_LENGTH; i++)
+		{
+			if (i >= leftTextWindowPos && i <= rightTextWindowPos)
+			{
+				cputc(_workingLineBuffer[i]);
+			}
+		}
+	}
+
+	gotoxy(
+		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
+		_textPos.ScreenLine);
 }
 
 void LineBufferToCurrentScreenLine()
@@ -328,7 +396,9 @@ void CursorLeft()
 	{
 		_textPos.Column--;
 		_textPos.ScreenColumn--;
-		if (_textPos.ScreenColumn < 0)
+
+		// This is would be an underflow.
+		if (_textPos.ScreenColumn == 255)
 		{
 			// ScrollRight();
 			_textPos.ScreenColumn = 0;
@@ -348,6 +418,50 @@ void CursorRight()
 			_textPos.ScreenColumn = _screenSize.Width - 1;
 		}
 	}
+}
+
+void DeleteLine(unsigned int lineNumber)
+{
+	LineSegment *tmpLineSegment;
+	unsigned char i;
+
+	if (_maxLine == 0)
+	{
+		return;
+	}
+
+	if (_maxLine < lineNumber)
+	{
+		return;
+	}
+
+	// Free segments used by that line:
+	if (_firstFreeSegment != NULL)
+	{
+		// We need to find the end of the free segments, and ...
+		tmpLineSegment = _firstFreeSegment;
+		while (tmpLineSegment->nextSegment != NULL)
+		{
+			tmpLineSegment = tmpLineSegment->nextSegment;
+		}
+
+		// ...chain it with the segments of the line to delete.
+		tmpLineSegment->nextSegment = _editorLines[lineNumber].firstLineSegment;
+	}
+	else
+	{
+		// If there weren't any free segments before - now we have them!
+		_firstFreeSegment = _editorLines[lineNumber].firstLineSegment;
+	}
+
+	// Now, let's delete the pointer.
+	for (i = lineNumber; i < _maxLine; i++)
+	{
+		_editorLines[i] = _editorLines[i + 1];
+	}
+
+	_maxLine--;
+	Invalidate();
 }
 
 void InsertChar(char currentChar)
@@ -512,6 +626,13 @@ void main(void)
 		else if (currentChar == KEY_DELETE)
 		{
 			DeleteChar();
+		}
+		else if (currentChar == KEY_ERASELINE)
+		{
+			if (_textPos.Line < _maxLine)
+			{
+				DeleteLine(_textPos.Line);
+			}
 		}
 		else if (currentChar == KEY_CURDOWN)
 		{
