@@ -16,12 +16,14 @@
 #define KEY_TAB 9
 
 #define SEGMENT_TEXT_LENGTH 10
-#define START_EDITOR_LINES 4
+#define START_EDITOR_LINES_CAPACITY 4
 
 #define MAX_LINE_LENGTH 255
 #define LINE_NUMBER_OFFSET 6
 
 #define EDITOR_MEMORY 0x9000
+
+#define SPACE 32
 
 // A Segment of SEGMENT_TEXT_LENGTH of bytes for storing text.
 typedef struct LineSegment LineSegment;
@@ -30,7 +32,7 @@ typedef struct LineSegment LineSegment;
 typedef struct TextPosition TextPosition;
 
 // The Size of the Screen.
-typedef struct Size Size;
+typedef struct ScreenSize ScreenSize;
 
 // Pointer for each Line: length of Line and pointer to first line segment.
 typedef struct EditorLine EditorLine;
@@ -47,10 +49,13 @@ struct LineSegment
 	LineSegment *nextSegment;
 };
 
-struct Size
+struct ScreenSize
 {
 	unsigned char Width;
 	unsigned char Height;
+	unsigned char FirstDocumentLine;
+	unsigned char LastDocumentLine;
+	unsigned char EffectiveScreenHeight;
 };
 
 struct TextPosition
@@ -90,7 +95,7 @@ unsigned int _maxLineSegment;
 TextPosition _textPos;
 
 // The current screensize.
-Size _screenSize;
+ScreenSize _screenSize;
 
 // The line number in which the status bar is at.
 unsigned char _statusBarLineNo;
@@ -134,7 +139,7 @@ void UpdateDocInfo(int line, int column, char currentChar)
 
 	gotoxy(
 		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
-		_textPos.ScreenLine);
+		_textPos.ScreenLine + _screenSize.FirstDocumentLine);
 }
 
 void EnsureEditorLinesCapacity(char init)
@@ -155,12 +160,16 @@ void Initialize()
 	_textPos.ScreenColumn = 0;
 	_textPos.ScreenLine = 0;
 
-	_editorLinesCapacity = START_EDITOR_LINES;
+	_editorLinesCapacity = START_EDITOR_LINES_CAPACITY;
 	EnsureEditorLinesCapacity(1); // init:1
 
 	screensize(&_screenSize.Width, &_screenSize.Height);
+
 	_screenSize.Width = _screenSize.Width - LINE_NUMBER_OFFSET - 1;
 	_statusBarLineNo = _screenSize.Height - 1;
+	_screenSize.FirstDocumentLine = 1;
+	_screenSize.LastDocumentLine = _screenSize.Height - 2;
+	_screenSize.EffectiveScreenHeight = _screenSize.LastDocumentLine - _screenSize.FirstDocumentLine;
 	_debugLineNo = _screenSize.Height - 2;
 
 	clrscr();
@@ -169,11 +178,14 @@ void Initialize()
 	_maxLineSegment = 0;
 	_editorLineSegments = (LineSegment *)EDITOR_MEMORY;
 	_firstFreeSegment = NULL;
+
+	gotoxy(LINE_NUMBER_OFFSET,
+		   _textPos.ScreenLine + _screenSize.FirstDocumentLine);
 }
 
 void PrintLineNumber()
 {
-	gotoxy(0, _textPos.ScreenLine);
+	gotoxy(0, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
 	printf("%04d:", _textPos.Line + 1);
 }
 
@@ -221,9 +233,10 @@ void SaveBufferToEditorMemory()
 		currentLineSegment->text[y++] = _lineBuffer[i];
 	}
 	_editorLines[_textPos.Line].length = _textPos.LineLength;
+	currentLineSegment->nextSegment = NULL;
 }
 
-void GetBufferFromEditorMemoryAndPrint()
+void GetBufferFromEditorMemoryAndPrint(unsigned char suppressFreeMem)
 {
 	LineSegment *currentLineSegment, *tmpLineSegment;
 	unsigned char lineLength;
@@ -231,29 +244,32 @@ void GetBufferFromEditorMemoryAndPrint()
 	unsigned char i;
 	unsigned char columnOffset;
 
-	// Free the line, if it is not a new line we're saving.
-	// This is either NULL or what ever segment we have already allocated.
-	// It is supposed to be NULL when we appended a new line at the end.
-	if (_firstFreeSegment != NULL)
+	if (suppressFreeMem == 0)
 	{
-		// We need to traverse everything until its hit NULL
-		// and then link that segment with the segments occupied
-		// by this line:
-		tmpLineSegment = _firstFreeSegment;
-		while (tmpLineSegment->nextSegment != NULL)
+		// Free the line, if it is not a new line we're saving.
+		// This is either NULL or what ever segment we have already allocated.
+		// It is supposed to be NULL when we appended a new line at the end.
+		if (_firstFreeSegment != NULL)
 		{
-			tmpLineSegment = tmpLineSegment->nextSegment;
-		}
+			// We need to traverse everything until its hit NULL
+			// and then link that segment with the segments occupied
+			// by this line:
+			tmpLineSegment = _firstFreeSegment;
+			while (tmpLineSegment->nextSegment != NULL)
+			{
+				tmpLineSegment = tmpLineSegment->nextSegment;
+			}
 
-		// This is, because there might have been free segments left from
-		// the last edit which resulted in less segments then there were before.
-		tmpLineSegment->nextSegment = _editorLines[_textPos.Line].firstLineSegment;
-	}
-	else
-	{
-		// If we adding new lines, this will stay NULL. If we move around and edit,
-		// this leads to reusing the existing segments.
-		_firstFreeSegment = _editorLines[_textPos.Line].firstLineSegment;
+			// This is, because there might have been free segments left from
+			// the last edit which resulted in less segments then there were before.
+			tmpLineSegment->nextSegment = _editorLines[_textPos.Line].firstLineSegment;
+		}
+		else
+		{
+			// If we adding new lines, this will stay NULL. If we move around and edit,
+			// this leads to reusing the existing segments.
+			_firstFreeSegment = _editorLines[_textPos.Line].firstLineSegment;
+		}
 	}
 
 	columnOffset = _textPos.Column - _textPos.ScreenColumn;
@@ -262,7 +278,7 @@ void GetBufferFromEditorMemoryAndPrint()
 	_textPos.LineLength = lineLength;
 	charpoint = 0;
 
-	gotoxy(LINE_NUMBER_OFFSET, _textPos.ScreenLine);
+	gotoxy(LINE_NUMBER_OFFSET, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
 
 	for (i = 0; i < MAX_LINE_LENGTH; i++)
 	{
@@ -328,36 +344,45 @@ void Invalidate()
 	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
 
 	startLine = _textPos.Line - _textPos.ScreenLine;
-	if (_maxLine < (_screenSize.Height - 2))
-	{
-		endLine = startLine + _maxLine;
-	}
-	else
-	{
-		endLine = startLine + _screenSize.Height - 2;
-	}
+	endLine = startLine + _screenSize.EffectiveScreenHeight;
 
 	for (line = startLine; line < endLine; line++)
 	{
-		// Print Linenumber.
-		gotoxy(0, _textPos.ScreenLine);
-		printf("%04d:", _textPos.Line + 1);
-
-		gotoxy(LINE_NUMBER_OFFSET, line);
-		currentLineLength = GetWorkingLine(line);
-
-		for (i = 0; i < MAX_LINE_LENGTH; i++)
+		if (line <= _maxLine)
 		{
-			if (i >= leftTextWindowPos && i <= rightTextWindowPos)
+			// Print line number.
+			gotoxy(0, line + _screenSize.FirstDocumentLine);
+			printf("%04d:", line + 1);
+
+			gotoxy(LINE_NUMBER_OFFSET, line + _screenSize.FirstDocumentLine);
+
+			if (line < _maxLine)
 			{
-				cputc(_workingLineBuffer[i]);
+				currentLineLength = GetWorkingLine(line);
+
+				for (i = 0; i < MAX_LINE_LENGTH; i++)
+				{
+					if (i >= leftTextWindowPos && i <= rightTextWindowPos)
+					{
+						cputc(_workingLineBuffer[i]);
+					}
+				}
+			}
+		}
+		else
+		{
+			for (i = leftTextWindowPos; i <= rightTextWindowPos; i++)
+			{
+				cputc(SPACE);
 			}
 		}
 	}
 
 	gotoxy(
 		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
-		_textPos.ScreenLine);
+		_textPos.ScreenLine + _screenSize.FirstDocumentLine);
+
+	_textPos.LineLength = _editorLines[_textPos.Line].length;
 }
 
 void LineBufferToCurrentScreenLine()
@@ -368,7 +393,7 @@ void LineBufferToCurrentScreenLine()
 	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
 	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
 
-	gotoxy(LINE_NUMBER_OFFSET, _textPos.ScreenLine);
+	gotoxy(LINE_NUMBER_OFFSET, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
 
 	for (i = 0; i < MAX_LINE_LENGTH; i++)
 	{
@@ -387,7 +412,7 @@ void LineBufferToCurrentScreenLine()
 
 	gotoxy(
 		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
-		_textPos.ScreenLine);
+		_textPos.ScreenLine + _screenSize.FirstDocumentLine);
 }
 
 void CursorLeft()
@@ -461,7 +486,9 @@ void DeleteLine(unsigned int lineNumber)
 	}
 
 	_maxLine--;
+	_textPos.LineLength = _editorLines[_textPos.Line].length;
 	Invalidate();
+	GetBufferFromEditorMemoryAndPrint(1);
 }
 
 void InsertChar(char currentChar)
@@ -553,8 +580,8 @@ void CursorUp()
 	_textPos.Line--;
 	_textPos.ScreenLine--;
 	_textPos.LineLength = (_editorLines + _textPos.Line)->length;
-	GetBufferFromEditorMemoryAndPrint();
-	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine);
+	GetBufferFromEditorMemoryAndPrint(/* supressFreeMem */ 0);
+	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
 }
 
 void CursorDown()
@@ -571,8 +598,8 @@ void CursorDown()
 	_textPos.Line++;
 	_textPos.ScreenLine++;
 	_textPos.LineLength = (_editorLines + _textPos.Line)->length;
-	GetBufferFromEditorMemoryAndPrint();
-	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine);
+	GetBufferFromEditorMemoryAndPrint(/* supressFreeMem */ 0);
+	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
 }
 
 void HandleReturnKey()
@@ -611,7 +638,6 @@ void main(void)
 
 	do
 	{
-
 		UpdateDocInfo(_textPos.Line, _textPos.Column, currentChar);
 		currentChar = cgetc();
 
