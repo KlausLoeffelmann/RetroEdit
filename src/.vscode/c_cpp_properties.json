@@ -3,7 +3,7 @@
         {
             "name": "CBM",
             "includePath": [
-                "E:/OneDrive/C64/Dev/cc65/include/**"
+                "C:/Users/klauslo/OneDrive/C64/Dev/cc65/include/**"
             ],
             "defines": [
                 "_DEBUG",

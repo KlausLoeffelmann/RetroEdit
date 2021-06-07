@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <conio.h>
 #include <cbm.h>
+#include "screentools.h"
 
 #define KEY_RETURN 13
 #define KEY_CURUP 145
@@ -114,6 +115,7 @@ void DebugPrintSlow(const char *text, int value)
 {
 	gotoxy(1, _debugLineNo);
 	printf(text, value);
+	SomeMethod();
 	for (value = 0; value < 20000; value++)
 	{
 	}
