@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <conio.h>
 #include <cbm.h>
+
 #include "screentools.h"
 
 #define KEY_RETURN 13
@@ -22,7 +23,11 @@
 #define MAX_LINE_LENGTH 255
 #define LINE_NUMBER_OFFSET 6
 
-#define EDITOR_MEMORY 0x9000
+#if __CX16__
+	#define EDITOR_MEMORY 0x9000
+#else
+	#define EDITOR_MEMORY 0xC000
+#endif
 
 #define SPACE 32
 
@@ -124,7 +129,7 @@ void DebugPrintSlow(const char *text, int value)
 void UpdateDocInfo(int line, int column, char currentChar)
 {
 	LineSegment *tmpLines = _editorLineSegments;
-
+#if __CX16__
 	gotoxy(1, _statusBarLineNo);
 	printf("Line: %04d", line);
 	gotoxy(15, _statusBarLineNo);
@@ -138,7 +143,15 @@ void UpdateDocInfo(int line, int column, char currentChar)
 
 	gotoxy(62, _statusBarLineNo);
 	printf("maxLS: %d", _maxLineSegment);
-
+#else
+	gotoxy(1, _statusBarLineNo);
+	printf("L: %05d", line);
+	gotoxy(10, _statusBarLineNo);
+	printf("C: %03d", column);
+	gotoxy(16, _statusBarLineNo);
+	tmpLines += _maxLineSegment;
+	printf("Lines-*: %X/%X", tmpLines, _firstFreeSegment);
+#endif
 	gotoxy(
 		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
 		_textPos.ScreenLine + _screenSize.FirstDocumentLine);
