@@ -1,5 +1,11 @@
 {
     "files.associations": {
-        "cbm.h": "c"
-    }
+        "cbm.h": "c",
+        "c64.h": "c",
+        "_vic2.h": "c",
+        "6502.h": "c",
+        "cc65.h": "c",
+        "peekpoke.h": "c"
+    },
+    "C_Cpp.dimInactiveRegions": false
 }

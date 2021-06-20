@@ -10,6 +10,8 @@
 	.importzp	sp, sreg, regsave, regbank
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
+	.import		_printf
+	.import		_gotoxy
 	.export		__lineBuffer
 	.export		__workingLineBuffer
 	.export		__editorLines
@@ -22,8 +24,8 @@
 	.export		__statusBarLineNo
 	.export		__debugLineNo
 	.export		__maxLine
-	.export		_ClearScreen
-	.export		_DrawWindow
+	.export		_DebugPrint
+	.export		_DebugPrintSlow
 
 .segment	"BSS"
 
@@ -53,100 +55,79 @@ __maxLine:
 	.res	2,$00
 
 ; ---------------------------------------------------------------
-; void __near__ ClearScreen (unsigned char, unsigned char, unsigned char, unsigned char)
+; void __near__ DebugPrint (__near__ const unsigned char *, int)
 ; ---------------------------------------------------------------
 
 .segment	"CODE"
 
-.proc	_ClearScreen: near
-
-.segment	"CODE"
-
-	jsr     pusha
-	jsr     decsp4
-	lda     __screenSize
-	jsr     pusha0
-	ldy     #$08
-	lda     (sp),y
-	jsr     tosumula0
-	sta     ptr1
-	txa
-	clc
-	adc     #$0A
-	sta     ptr1+1
-	ldy     #$07
-	lda     (sp),y
-	clc
-	adc     ptr1
-	ldx     ptr1+1
-	bcc     L0023
-	inx
-L0023:	ldy     #$02
-	jsr     staxysp
-	lda     #$00
-	tay
-	sta     (sp),y
-	tax
-L0025:	lda     (sp),y
-	ldy     #$04
-	cmp     (sp),y
-	bcs     L000D
-	txa
-	ldy     #$01
-L0029:	sta     (sp),y
-	ldy     #$05
-	cmp     (sp),y
-	bcs     L0028
-	ldy     #$03
-	lda     (sp),y
-	tax
-	dey
-	lda     (sp),y
-	sta     regsave
-	stx     regsave+1
-	clc
-	adc     #$01
-	bcc     L001D
-	inx
-L001D:	jsr     staxysp
-	lda     #$20
-	ldy     #$00
-	sta     (regsave),y
-	iny
-	ldx     #$00
-	lda     (sp),y
-	clc
-	adc     #$01
-	jmp     L0029
-L0028:	lda     __screenSize
-	sec
-	ldy     #$07
-	sbc     (sp),y
-	ldy     #$02
-	jsr     addeqysp
-	ldy     #$00
-	ldx     #$00
-	lda     (sp),y
-	clc
-	adc     #$01
-	sta     (sp),y
-	jmp     L0025
-L000D:	jmp     incsp8
-
-.endproc
-
-; ---------------------------------------------------------------
-; void __near__ DrawWindow (unsigned char, unsigned char, unsigned char, unsigned char, __near__ unsigned char *)
-; ---------------------------------------------------------------
-
-.segment	"CODE"
-
-.proc	_DrawWindow: near
+.proc	_DebugPrint: near
 
 .segment	"CODE"
 
 	jsr     pushax
-	jmp     incsp6
+	lda     #$01
+	jsr     pusha
+	lda     __debugLineNo
+	jsr     _gotoxy
+	ldy     #$05
+	jsr     pushwysp
+	ldy     #$05
+	jsr     pushwysp
+	ldy     #$04
+	jsr     _printf
+	jmp     incsp4
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ DebugPrintSlow (__near__ const unsigned char *, int)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_DebugPrintSlow: near
+
+.segment	"CODE"
+
+	jsr     pushax
+	lda     #$01
+	jsr     pusha
+	lda     __debugLineNo
+	jsr     _gotoxy
+	ldy     #$05
+	jsr     pushwysp
+	ldy     #$05
+	jsr     pushwysp
+	ldy     #$04
+	jsr     _printf
+	ldy     #$00
+	tya
+	sta     (sp),y
+	iny
+	sta     (sp),y
+L0017:	ldy     #$01
+	lda     (sp),y
+	tax
+	dey
+	lda     (sp),y
+	cmp     #$20
+	txa
+	sbc     #$4E
+	bvc     L001E
+	eor     #$80
+L001E:	bpl     L0018
+	iny
+	lda     (sp),y
+	tax
+	dey
+	lda     (sp),y
+	clc
+	adc     #$01
+	bcc     L0020
+	inx
+L0020:	jsr     stax0sp
+	jmp     L0017
+L0018:	jmp     incsp4
 
 .endproc
 
