@@ -46,7 +46,7 @@ __maxLineSegment:
 __textPos:
 	.res	6,$00
 __screenSize:
-	.res	6,$00
+	.res	7,$00
 __statusBarLineNo:
 	.res	1,$00
 __debugLineNo:
@@ -90,44 +90,47 @@ __maxLine:
 .segment	"CODE"
 
 	jsr     pushax
+	jsr     decsp1
+	lda     #$88
+	ldy     #$00
+	sta     (sp),y
 	lda     #$01
 	jsr     pusha
 	lda     __debugLineNo
 	jsr     _gotoxy
-	ldy     #$05
+	ldy     #$06
 	jsr     pushwysp
-	ldy     #$05
+	ldy     #$06
 	jsr     pushwysp
 	ldy     #$04
 	jsr     _printf
-	ldy     #$00
-	tya
+	ldy     #$01
+	lda     #$00
 	sta     (sp),y
 	iny
 	sta     (sp),y
-L0017:	ldy     #$01
+L0019:	ldy     #$02
 	lda     (sp),y
 	tax
 	dey
 	lda     (sp),y
-	cmp     #$20
+	dey
+	cmp     (sp),y
 	txa
-	sbc     #$4E
-	bvc     L001E
-	eor     #$80
-L001E:	bpl     L0018
-	iny
+	sbc     #$00
+	bcs     L001A
+	ldy     #$02
 	lda     (sp),y
 	tax
 	dey
 	lda     (sp),y
 	clc
 	adc     #$01
-	bcc     L0020
+	bcc     L0021
 	inx
-L0020:	jsr     stax0sp
-	jmp     L0017
-L0018:	jmp     incsp4
+L0021:	jsr     staxysp
+	jmp     L0019
+L001A:	jmp     incsp5
 
 .endproc
 

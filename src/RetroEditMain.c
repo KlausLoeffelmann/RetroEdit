@@ -29,8 +29,10 @@ void UpdateDocInfo(int line, int column, char currentChar)
 	gotoxy(10, _statusBarLineNo);
 	printf("C: %03d", column);
 	gotoxy(20, _statusBarLineNo);
+	printf("KC: %03d", currentChar);
+	gotoxy(28, _statusBarLineNo);
 	tmpLines += _maxLineSegment;
-	printf("Lines-*: %X/%X", tmpLines, _firstFreeSegment);
+	printf("Ls*: %X/%X", tmpLines, _firstFreeSegment);
 #endif
 	gotoxy(
 		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
@@ -281,7 +283,6 @@ void Invalidate(char *lineBuffer)
 			for (i = leftTextWindowPos; i <= rightTextWindowPos; i++)
 			{
 				*screenMem++ = workingLineBuffer[i];
-				DebugPrintSlow("ScreenMem: %05d", screenMem);
 			}
 		}
 		else
@@ -289,12 +290,10 @@ void Invalidate(char *lineBuffer)
 			for (i = leftTextWindowPos; i <= rightTextWindowPos; i++)
 			{
 				*screenMem++ = SPACE;
-				DebugPrintSlow("ScreenMem: %05d", screenMem);
 			}
 		}
 
 		screenMem = screenMem + LINE_NUMBER_OFFSET;
-		DebugPrintSlow("ScreenMem: %05d", screenMem);
 	}
 
 	gotoxy(

@@ -44,7 +44,7 @@ __maxLineSegment:
 __textPos:
 	.res	6,$00
 __screenSize:
-	.res	6,$00
+	.res	7,$00
 __statusBarLineNo:
 	.res	1,$00
 __debugLineNo:

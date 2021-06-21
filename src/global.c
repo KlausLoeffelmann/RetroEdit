@@ -14,9 +14,18 @@ void DebugPrint(const char *text, int value)
 
 void DebugPrintSlow(const char *text, int value)
 {
+	unsigned char loopMax;
+
+#if __C64__
+	loopMax = 5000;
+#else
+	loopMap = 20000;
+#endif
+
 	gotoxy(1, _debugLineNo);
 	printf(text, value);
-	for (value = 0; value < 20000; value++)
+
+	for (value = 0; value < loopMax; value++)
 	{
 	}
 }
