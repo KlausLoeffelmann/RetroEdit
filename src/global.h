@@ -12,7 +12,7 @@
 #define SEGMENT_TEXT_LENGTH 10
 #define START_EDITOR_LINES_CAPACITY 4
 
-#define MAX_LINE_LENGTH 255
+#define MAX_LINE_LENGTH 160
 #define LINE_NUMBER_OFFSET 6
 
 #if __CX16__
@@ -49,11 +49,13 @@ struct LineSegment
 
 struct ScreenSize
 {
-	unsigned char Width;
+	unsigned char EffectiveWidth;
+	unsigned char EffectiveHeight;
 	unsigned char Height;
+	unsigned char Width;
 	unsigned char FirstDocumentLine;
 	unsigned char LastDocumentLine;
-	unsigned char EffectiveScreenHeight;
+	unsigned char RightOffset;
 };
 
 struct TextPosition
@@ -69,8 +71,8 @@ struct TextPosition
 // A line has 255 chars max. When it's time to commit the line,
 // it's getting transferred into segments of SEGMENT_TEXT_LENGTH
 // Bytes.
-char _lineBuffer[255];
-char _workingLineBuffer[255];
+char _lineBuffer[MAX_LINE_LENGTH];
+char _workingLineBuffer[MAX_LINE_LENGTH];
 
 // Pointer to the array holding the point to the start
 // and the length of each line.
@@ -101,6 +103,13 @@ unsigned char _debugLineNo;
 
 // The max lines we can use.
 unsigned int _maxLine;
+
+// TODO: We need to correct this for CX16 and Apple.
+#if __C64__
+	#define SCREENMEM 0x0400
+#else
+	#define SCREENMEM 0x0A00
+#endif
 
 void DebugPrint(const char *text, int value);
 void DebugPrintSlow(const char *text, int value);

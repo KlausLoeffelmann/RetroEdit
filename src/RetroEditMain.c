@@ -65,12 +65,13 @@ void Initialize()
 	EnsureEditorLinesCapacity(1);// init:1
 
 	screensize(&_screenSize.Width, &_screenSize.Height);
-
-	_screenSize.Width = _screenSize.Width - LINE_NUMBER_OFFSET - 1;
+	_screenSize.EffectiveWidth = _screenSize.Width - LINE_NUMBER_OFFSET - 1;
+	
+	_screenSize.RightOffset = LINE_NUMBER_OFFSET - 1;
 	_statusBarLineNo = _screenSize.Height - 1;
 	_screenSize.FirstDocumentLine = 1;
 	_screenSize.LastDocumentLine = _screenSize.Height - 2;
-	_screenSize.EffectiveScreenHeight = _screenSize.LastDocumentLine - _screenSize.FirstDocumentLine;
+	_screenSize.EffectiveHeight = _screenSize.LastDocumentLine - _screenSize.FirstDocumentLine;
 	_debugLineNo = _screenSize.Height - 2;
 
 	clrscr();
@@ -197,7 +198,7 @@ void GetBufferFromEditorMemoryAndPrint(unsigned char suppressFreeMem)
 			_lineBuffer[i] = 32;
 		}
 
-		if (i >= columnOffset && i <= (columnOffset + _screenSize.Width))
+		if (i >= columnOffset && i <= (columnOffset + _screenSize.EffectiveWidth))
 		{
 			cputc(_lineBuffer[i]);
 		}
@@ -235,8 +236,78 @@ unsigned int GetWorkingLine(unsigned int lineNumber)
 	return lineLength;
 }
 
-// Repaints the whole screen.
-void Invalidate()
+
+#if __C64__ | __CX16__
+
+// Repaints the whole screen - optimzed version.
+// We have access to the screen memory, and can optimze a lot!
+void Invalidate(char *lineBuffer)
+{
+	unsigned char i, line, startLine, endLine, currentLineLength;
+	unsigned char leftTextWindowPos, rightTextWindowPos;
+
+	// We access the screen memory directly and will NOT use cput.
+	unsigned char *screenMem, *workingLineBuffer;
+
+	screenMem = (unsigned char *)SCREENMEM + _screenSize.Width * _screenSize.FirstDocumentLine + LINE_NUMBER_OFFSET;
+
+	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
+	rightTextWindowPos = leftTextWindowPos + _screenSize.EffectiveWidth;
+
+	startLine = _textPos.Line - _textPos.ScreenLine;
+	endLine = startLine + _screenSize.EffectiveHeight;
+
+	for (line = startLine; line < endLine; line++)
+	{
+		if (line <= _maxLine)
+		{
+			// Print line number.
+			gotoxy(0, line + _screenSize.FirstDocumentLine);
+			printf("%04d!", line + 1);
+
+			gotoxy(LINE_NUMBER_OFFSET, line + _screenSize.FirstDocumentLine);
+
+			if (lineBuffer != NULL && line == _textPos.ScreenLine)
+			{
+				workingLineBuffer = lineBuffer;
+				currentLineLength = _textPos.LineLength;
+			}
+			else
+			{
+				currentLineLength = GetWorkingLine(line);
+				workingLineBuffer = _workingLineBuffer;
+			}
+
+			for (i = leftTextWindowPos; i <= rightTextWindowPos; i++)
+			{
+				*screenMem++ = workingLineBuffer[i];
+				DebugPrintSlow("ScreenMem: %05d", screenMem);
+			}
+		}
+		else
+		{
+			for (i = leftTextWindowPos; i <= rightTextWindowPos; i++)
+			{
+				*screenMem++ = SPACE;
+				DebugPrintSlow("ScreenMem: %05d", screenMem);
+			}
+		}
+
+		screenMem = screenMem + LINE_NUMBER_OFFSET;
+		DebugPrintSlow("ScreenMem: %05d", screenMem);
+	}
+
+	gotoxy(
+		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
+		_textPos.ScreenLine + _screenSize.FirstDocumentLine);
+
+	_textPos.LineLength = _editorLines[_textPos.Line].length;
+}
+#else
+
+// Repaints the whole screen. 
+// This is the version, where we cannot access the screen memory directly. It's painfully slow.
+void Invalidate(char *lineBuffer)
 {
 	unsigned char i, line, startLine, endLine, currentLineLength;
 	unsigned char leftTextWindowPos, rightTextWindowPos;
@@ -285,6 +356,7 @@ void Invalidate()
 
 	_textPos.LineLength = _editorLines[_textPos.Line].length;
 }
+#endif
 
 void LineBufferToCurrentScreenLine()
 {
@@ -292,7 +364,7 @@ void LineBufferToCurrentScreenLine()
 	unsigned char leftTextWindowPos, rightTextWindowPos;
 
 	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
-	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
+	rightTextWindowPos = leftTextWindowPos + _screenSize.EffectiveWidth;
 
 	gotoxy(LINE_NUMBER_OFFSET, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
 
@@ -326,8 +398,8 @@ void CursorLeft()
 		// This is would be an underflow.
 		if (_textPos.ScreenColumn == 255)
 		{
-			// ScrollRight();
 			_textPos.ScreenColumn = 0;
+			Invalidate(NULL);
 		}
 	}
 }
@@ -338,10 +410,10 @@ void CursorRight()
 	{
 		_textPos.Column++;
 		_textPos.ScreenColumn++;
-		if (_textPos.ScreenColumn > _screenSize.Width - 1)
+		if (_textPos.ScreenColumn > _screenSize.EffectiveWidth - 1)
 		{
-			// ScrollLeft();
-			_textPos.ScreenColumn = _screenSize.Width - 1;
+			_textPos.ScreenColumn = _screenSize.EffectiveWidth - 1;
+			Invalidate(NULL);
 		}
 	}
 }
@@ -388,7 +460,7 @@ void DeleteLine(unsigned int lineNumber)
 
 	_maxLine--;
 	_textPos.LineLength = _editorLines[_textPos.Line].length;
-	Invalidate();
+	Invalidate(NULL);
 	GetBufferFromEditorMemoryAndPrint(1);
 }
 
@@ -402,10 +474,16 @@ void InsertChar(char currentChar)
 		{
 			_lineBuffer[_textPos.Column] = currentChar;
 			_textPos.Column++;
-			if (_textPos.ScreenColumn < _screenSize.Width)
+			if (_textPos.ScreenColumn <= _screenSize.EffectiveWidth - 1)
 			{
 				cputc(currentChar);
 				_textPos.ScreenColumn++;
+			}
+			else
+			{	// We invalidate everything, and pass the current lineBuffer.
+				// Invalidate then uses this buffer instead of the getting
+				// the line from memory in a temporary buffer for the current line.			
+				Invalidate(_lineBuffer);
 			}
 		}
 		else
@@ -476,10 +554,23 @@ void Backspace()
 
 void CursorUp()
 {
-	// TODO: Scrolling.
+	if (_textPos.Line==0)
+	{
+		return;
+	}
+
 	SaveBufferToEditorMemory();
 	_textPos.Line--;
-	_textPos.ScreenLine--;
+
+	if (_textPos.ScreenLine >= _screenSize.FirstDocumentLine)
+	{
+		_textPos.ScreenLine--;
+	}
+	else
+	{
+		Invalidate(NULL);
+	}
+
 	_textPos.LineLength = (_editorLines + _textPos.Line)->length;
 	GetBufferFromEditorMemoryAndPrint(/* supressFreeMem */ 0);
 	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
@@ -493,11 +584,17 @@ void CursorDown()
 		return;
 	}
 
-	// TODO: Scrolling.
-
 	SaveBufferToEditorMemory();
 	_textPos.Line++;
-	_textPos.ScreenLine++;
+	if (_textPos.ScreenLine<=_screenSize.EffectiveHeight)
+	{
+		_textPos.ScreenLine++;
+	}
+	else
+	{
+		Invalidate(NULL);
+	}
+
 	_textPos.LineLength = (_editorLines + _textPos.Line)->length;
 	GetBufferFromEditorMemoryAndPrint(/* supressFreeMem */ 0);
 	gotoxy(_textPos.ScreenColumn, _textPos.ScreenLine + _screenSize.FirstDocumentLine);
@@ -519,7 +616,7 @@ void HandleReturnKey()
 		}
 		else
 		{
-			Invalidate();
+			Invalidate(NULL);
 		}
 		PrintLineNumber();
 	}

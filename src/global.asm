@@ -30,9 +30,9 @@
 .segment	"BSS"
 
 __lineBuffer:
-	.res	255,$00
+	.res	160,$00
 __workingLineBuffer:
-	.res	255,$00
+	.res	160,$00
 __editorLines:
 	.res	2,$00
 __editorLinesCapacity:
@@ -46,7 +46,7 @@ __maxLineSegment:
 __textPos:
 	.res	6,$00
 __screenSize:
-	.res	5,$00
+	.res	6,$00
 __statusBarLineNo:
 	.res	1,$00
 __debugLineNo:
