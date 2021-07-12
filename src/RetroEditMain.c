@@ -282,7 +282,7 @@ void Invalidate(char *lineBuffer)
 
 			for (i = leftTextWindowPos; i <= rightTextWindowPos; i++)
 			{
-				*screenMem++ = workingLineBuffer[i];
+				*screenMem++ = PetAsciiToScreenCode(workingLineBuffer[i]);
 			}
 		}
 		else
@@ -312,7 +312,7 @@ void Invalidate(char *lineBuffer)
 	unsigned char leftTextWindowPos, rightTextWindowPos;
 
 	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
-	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
+	rightTextWindowPos = leftTextWindowPosl + _screenSize.Width;
 
 	startLine = _textPos.Line - _textPos.ScreenLine;
 	endLine = startLine + _screenSize.EffectiveScreenHeight;

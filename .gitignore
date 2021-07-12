@@ -53,3 +53,8 @@ dkms.conf
 /src/.vs/src/v16/Int Preview
 /src/.vs
 src/.vscode/c_cpp_properties.json
+obj/c64/
+retroedit.c64
+retroedit.c64.dbg
+retroedit.c64.lbl
+src/RETROEDIT.PRG
