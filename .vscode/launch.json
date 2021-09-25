@@ -6,11 +6,18 @@
     "configurations": [
         {
             "type": "cc65-vice",
+            "program": "retroedit.c64",
+            "debugFile": "retroedit.c64.dbg",
+            "mapFile": "retroedit.c64.map",
             "request": "launch",
             "name": "CC65 Vice Launch",
-            "buildCwd": "${workspaceFolder}",
-            "buildCommand": "make OPTIONS=mapfile,labelfile,debugfile",
-            "preprocessCommand": "make OPTIONS=mapfile,labelfile,debugfile preprocess-only",
+            "build": {
+                "cwd": "${workspaceFolder}",
+                "command": "make",
+                "args": [
+                    "OPTIONS=mapfile,labelfile,debugfile"
+                ]
+            },
             "stopOnEntry": true,
             "stopOnExit": true,
             "viceArgs": [

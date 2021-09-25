@@ -11,7 +11,7 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.19041.0",
-            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Preview/VC/Tools/MSVC/14.29.30130/bin/Hostx64/x64/cl.exe",
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Preview/VC/Tools/MSVC/14.29.30130/bin/Hostx64/x64/cl.exe",
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-msvc-x64"
@@ -27,7 +27,7 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.19041.0",
-            "compilerPath": "C:/OneDrive/ClassicComputing/cc65/bin/cl65.exe",
+            "compilerPath": "%onedriveconsumer%/ClassicComputing/cc65/bin/cl65.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-msvc-x64"

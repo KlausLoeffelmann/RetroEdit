@@ -19,7 +19,7 @@ void DebugPrintSlow(const char *text, int value)
 #if __C64__
 	loopMax = 5000;
 #else
-	loopMap = 20000;
+	loopMax = 20000;
 #endif
 
 	gotoxy(1, _debugLineNo);

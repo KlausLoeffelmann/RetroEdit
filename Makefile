@@ -35,7 +35,7 @@ ASFLAGS = -g
 
 # Additional linker flags and options.
 # Default: none
-LDFLAGS = -g
+LDFLAGS = -g --ld-args --allow-multiple-definition
 
 # Path to the directory containing C and ASM sources.
 # Default: src
@@ -63,7 +63,7 @@ POSTEMUCMD :=
 # In such case, please set the variable below to point to directory containing
 # VICE emulators.
 #VICE_HOME := "C:\Program Files\WinVICE-2.2-x86\"
-VICE_HOME := "%onedriveconsumer%/ClassicComputing/C64/WinVice (GTK)/GTK3VICE-3.5-win64/"
+VICE_HOME :=
 
 # Options state file name. You should not need to change this, but for those
 # rare cases when you feel you really need to name it differently - here you are
@@ -229,6 +229,9 @@ INTERMEDIATES := $(addsuffix .i,$(basename $(addprefix $(TARGETOBJDIR)/,$(notdir
 # Set DEPENDS to something like 'obj/c64/foo.d obj/c64/bar.d'.
 DEPENDS := $(OBJECTS:.o=.d)
 
+# Set TABS to something like 'obj/c64/foo.tab obj/c64/bar.tab'.
+TABS := $(OBJECTS:.o=.tab)
+
 # Add to LIBS something like 'src/foo.lib src/c64/bar.lib'.
 LIBS += $(wildcard $(SRCDIR)/*.lib)
 LIBS += $(wildcard $(SRCDIR)/$(TARGETLIST)/*.lib)
@@ -247,8 +250,6 @@ endif
 .PHONY: all test clean zap love
 
 all: $(PROGRAM)
-
-preprocess-only: $(INTERMEDIATES)
 
 -include $(DEPENDS)
 -include $(STATEFILE)
@@ -290,7 +291,7 @@ $(TARGETOBJDIR):
 vpath %.c $(SRCDIR)/$(TARGETLIST) $(SRCDIR)
 
 $(TARGETOBJDIR)/%.o: %.c | $(TARGETOBJDIR)
-	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) $(CFLAGS) -o $@ $<
+	cl65 -t $(CC65TARGET) -c --create-dep $(@:.o=.d) -Wc "--debug-tables" -Wc "$(@:.o=.tab)" $(CFLAGS) -o $@ $<
 
 vpath %.s $(SRCDIR)/$(TARGETLIST) $(SRCDIR)
 
@@ -318,6 +319,7 @@ test: $(PROGRAM)
 clean:
 	$(call RMFILES,$(OBJECTS))
 	$(call RMFILES,$(DEPENDS))
+	$(call RMFILES,$(TABS))
 	$(call RMFILES,$(REMOVES))
 	$(call RMFILES,$(PROGRAM))
 
