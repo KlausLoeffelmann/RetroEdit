@@ -6,9 +6,9 @@
     "configurations": [
         {
             "type": "cc65-vice",
-            "program": "retroedit.c64",
-            "debugFile": "retroedit.c64.dbg",
-            "mapFile": "retroedit.c64.map",
+            "program": "${workspaceFolder}/retroedit.c64",
+            "debugFile": "${workspaceFolder}/retroedit.c64.dbg",
+            "mapFile": "${workspaceFolder}/retroedit.c64.map",
             "request": "launch",
             "name": "CC65 Vice Launch",
             "build": {
