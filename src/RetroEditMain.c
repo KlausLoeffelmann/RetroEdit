@@ -312,10 +312,10 @@ void Invalidate(char *lineBuffer)
 	unsigned char leftTextWindowPos, rightTextWindowPos;
 
 	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
-	rightTextWindowPos = leftTextWindowPosl + _screenSize.Width;
+	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
 
 	startLine = _textPos.Line - _textPos.ScreenLine;
-	endLine = startLine + _screenSize.EffectiveScreenHeight;
+	endLine = startLine + _screenSize.EffectiveHeight;
 
 	for (line = startLine; line < endLine; line++)
 	{

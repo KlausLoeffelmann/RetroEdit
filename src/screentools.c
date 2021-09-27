@@ -24,6 +24,8 @@ void ClearScreen(unsigned char column, unsigned char line, unsigned char width, 
 	unsigned char *screenMem;
 	unsigned char x, y;
 
+	
+
 	screenMem = (unsigned char *)SCREENMEM + _screenSize.EffectiveWidth * line + column;
 	for (y = 0; y < height; y++)
 	{
