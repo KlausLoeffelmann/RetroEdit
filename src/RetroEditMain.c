@@ -630,6 +630,10 @@ void HandleReturnKey()
 void main(void)
 {
 	char currentChar;
+
+	ClearScreenEx(5, 5, 35, 22, 'A');
+	return;
+	
 	Initialize();
 	PrintLineNumber();
 

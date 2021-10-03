@@ -19,24 +19,6 @@ unsigned char PetAsciiToScreenCode(unsigned char petAscii)
             return petAscii;
 }
 
-void ClearScreen(unsigned char column, unsigned char line, unsigned char width, unsigned char height)
-{
-	unsigned char *screenMem;
-	unsigned char x, y;
-
-	
-
-	screenMem = (unsigned char *)SCREENMEM + _screenSize.EffectiveWidth * line + column;
-	for (y = 0; y < height; y++)
-	{
-		for (x = 0; x < width; x++)
-		{
-			*screenMem++ = 32;
-		}
-		screenMem += (_screenSize.EffectiveWidth - column);
-	}
-}
-
 void DrawWindow(unsigned char column, unsigned char line, unsigned char width, unsigned char height, char *titel)
 {
 }
