@@ -43,32 +43,23 @@ skipInc:        rts
 _ClearScreen:
 .export _ClearScreen
 
-                lda #<SCREENMEM         ; Low- and High byte into the zeropage pointer.
-                sta ptr1
-                lda #>SCREENMEM
-                sta ptr1+1
-                ldx #$04                ; the screen memory are not 4 complete segments so...
-outerLoop:      lda screenSegs-1, x     ; ... we get the byte count for each segment from ...
-                tay                     ; ...a table.
-                lda #CHAR_SC_A         ; space into the screen buffer.
-innerLoop:      sta (ptr1), y
+                ldy #0
+                lda #CHAR_SPACE
+loop:           sta SCREENMEM, y
+                sta SCREENMEM+$100, y
+                sta SCREENMEM+$200, y
+                iny
+                bne loop
+                ldy #$e8
+loop2:          sta SCREENMEM+$2ff, y
                 dey
-                bne innerLoop           ; one segment.
-                sta (ptr1), y           ; account for 0 index in y.
-                inc ptr1+1              ; increase high byte of pointer for next segment
-                dex
-                bne outerLoop           ; no underflow - we keep clearing.
-                rts                     ; done!
+                bne loop2
+                rts
 
 .endscope
 
-.rodata
-screenSegs:     .byte $E8, $FF, $FF, $FF
-.code
-
 ;                            y=3                 y=2                y=1                 y=0              
 ; void ClearScreenEx(unsigned char column, unsigned char line, unsigned char width, unsigned char height, unsigned char clearChar)
-
 .scope
 _ClearScreenEx:
 .export _ClearScreenEx
