@@ -95,6 +95,7 @@ hCharRepeat:
 
                 pha
                 lda yPos                ; Get yPos Param.
+                clc                     ; we don't want to rol the carry!
                 rol                     ; *2
                 tax                     ; becomes index into lineBeginnings
                 clc
@@ -127,13 +128,14 @@ vCharRepeat:
 
                 pha
                 lda yPos                ; Get yPos Param.
+                clc                     ; we don't want to rol the carry!
                 rol                     ; *2
                 tax                     ; becomes index into lineBeginnings
                 clc
-                lda #<(SCREENMEM-1)     ; Low- and High byte into the zeropage pointer
+                lda #<(SCREENMEM)     ; Low- and High byte into the zeropage pointer
                 adc lineBeginnings, x
                 sta ptr1
-                lda #>(SCREENMEM-1)
+                lda #>(SCREENMEM)
                 adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
                 sta ptr1+1              ; is taken into account.
                 clc
@@ -144,16 +146,18 @@ vCharRepeat:
                 inc ptr1+1
 skipInc:        ldx height
                 ldy #0
-                pla                     ; the character to repeast
-loop:           sta (ptr1),y
+loop:           pla                     ; the character to repeast
+                sta (ptr1),y
+                pha
                 clc
                 lda ptr1
                 adc #40
                 sta ptr1
                 bcc skipInc2
-skipInc2:       inc ptr2
-                dex
+                inc ptr1+1
+skipInc2:       dex
                 bne loop
+                pla
                 rts
 .endscope
 
@@ -165,14 +169,15 @@ sCharOut:
                 height = tmp4
 
                 pha                     ; save the character to print, first.
+                clc                     ; we don't want to rol the carry!
                 lda yPos                ; Get yPos Param.
                 rol                     ; *2
                 tax                     ; becomes index into lineBeginnings
                 clc
-                lda #<(SCREENMEM-1)     ; Low- and High byte into the zeropage pointer
+                lda #<(SCREENMEM)       ; Low- and High byte into the zeropage pointer
                 adc lineBeginnings, x
                 sta ptr1
-                lda #>(SCREENMEM-1)
+                lda #>(SCREENMEM)
                 adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
                 sta ptr1+1              ; is taken into account.
                 clc
@@ -181,9 +186,8 @@ sCharOut:
                 sta ptr1
                 bcc skipInc
                 inc ptr1+1
-skipInc:        ldx height
-                ldy #0
-                lda #CHAR_VERTICAL_LINE
+skipInc:        ldy #0
+                pla
 loop:           sta (ptr1),y
                 rts
 .endscope
@@ -292,7 +296,7 @@ _PetAsciiToScreenCode:
 .code
 
 ; Draw Window
-;                            y=4                 y=3                y=2                 y=1                   y=0
+;                            y=3                 y=2                y=1                 y=0                   Akku
 ; void DrawWindow(unsigned char column, unsigned char line, unsigned char width, unsigned char height, unsigned char color)
 _DrawWindow:
                 xPos = tmp1
@@ -301,7 +305,7 @@ _DrawWindow:
                 height = tmp4
 .scope
 .export _DrawWindow
-                ldy #$04
+                ldy #$03
                 lda (sp), y             ; Get column (xPos) param.
                 sta xPos                ; For DrawLine internal.
                 dey
@@ -319,8 +323,8 @@ _DrawWindow:
                 jsr sCharOut
 
                 ; upper right corner:
-                lda xPos               ; tempsave xpos;
-                pha
+                lda xPos
+                pha                     ; temp-save xpos;
                 clc
                 adc width
                 sta xPos
@@ -351,8 +355,10 @@ _DrawWindow:
                 clc
                 adc width
                 sta xPos
-                lda #CHAR_RIGHT_UPPER_CORNER
+                lda #CHAR_RIGHT_LOWER_CORNER
                 jsr sCharOut
+                pla 
+                sta xPos
 
                 ; lower line
                 inc xPos

@@ -633,7 +633,7 @@ void main(void)
 
 	// ClearScreenEx(5, 3, 30, 10, 'A');
 	ClearScreen();
-	DrawWindow(5, 3, 20, 15, 5);
+	DrawWindow(5, 3, 20, 15, 42);
 	return;
 	
 	Initialize();
