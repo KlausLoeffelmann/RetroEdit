@@ -631,7 +631,9 @@ void main(void)
 {
 	char currentChar;
 
-	ClearScreenEx(5, 5, 35, 22, 'A');
+	// ClearScreenEx(5, 3, 30, 10, 'A');
+	ClearScreen();
+	DrawWindow(5, 3, 20, 15, 5);
 	return;
 	
 	Initialize();
