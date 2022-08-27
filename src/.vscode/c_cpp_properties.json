@@ -3,7 +3,8 @@
         {
             "name": "CBM",
             "includePath": [
-                "C:/OneDrive/ClassicComputing/cc65/include/**"
+                "${workspaceFolder}/**",
+                "C:/Users/klaus/OneDrive/ClassicComputing/cc65/include"
             ],
             "defines": [
                 "_DEBUG",

@@ -15,12 +15,12 @@
                 "cwd": "${workspaceFolder}",
                 "command": "make",
                 "args": [
-                    "OPTIONS=mapfile,labelfile,debugfile"
+                    "OPTIONS=mapfile,labelfile,debugfile,optspeed,listing"
                 ]
             },
             "stopOnEntry": true,
             "stopOnExit": true,
-            "viceArgs": [
+            "emulatorArgs": [
                 "-model",
                 "ntsc"
             ]

@@ -6,13 +6,24 @@
     "configurations": [
         {
             "type": "cc65-vice",
+            "program": "${workspaceFolder}/RetroEdit.c64",
+            "debugFile": "${workspaceFolder}/RetroEdit.c64.dbg",
+            "mapFile": "${workspaceFolder}/RetroEdit.c64.map",
             "request": "launch",
             "name": "CC65 Vice Launch",
-            "buildCwd": "${workspaceFolder}",
-            "buildCommand": "make",
+            "build": {
+                "cwd": "${workspaceFolder}",
+                "command": "make",
+                "args": [
+                    "OPTIONS=mapfile,labelfile,debugfile"
+                ]
+            },
             "stopOnEntry": true,
-            "viceCommand": "C:/Users/klauslo/OneDrive/C64/C-X16/Emulator/x16emu.exe",
-            "program": "${workspaceFolder}/spoonyassed.prg"
+            "stopOnExit": true,
+            "emulatorArgs": [
+                "-model",
+                "ntsc"
+            ]
         }
     ]
 }

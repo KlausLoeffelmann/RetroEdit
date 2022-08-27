@@ -4,26 +4,12 @@
 #include <conio.h>
 #include <cbm.h>
 
+#include "global.h"
 #include "screentools.h"
 
 void UpdateDocInfo(int line, int column, char currentChar)
 {
 	LineSegment *tmpLines = _editorLineSegments;
-#if __CX16__
-	gotoxy(1, _statusBarLineNo);
-	printf("Line: %04d", line);
-	gotoxy(15, _statusBarLineNo);
-	printf("Column: %03d", column);
-	gotoxy(30, _statusBarLineNo);
-	printf("Keycode: %03d", currentChar);
-
-	gotoxy(43, _statusBarLineNo);
-	tmpLines += _maxLineSegment;
-	printf("Lines-*: %X/%X", tmpLines, _firstFreeSegment);
-
-	gotoxy(62, _statusBarLineNo);
-	printf("maxLS: %d", _maxLineSegment);
-#else
 	gotoxy(1, _statusBarLineNo);
 	printf("L: %05d", line);
 	gotoxy(10, _statusBarLineNo);
@@ -33,7 +19,7 @@ void UpdateDocInfo(int line, int column, char currentChar)
 	gotoxy(28, _statusBarLineNo);
 	tmpLines += _maxLineSegment;
 	printf("Ls*: %X/%X", tmpLines, _firstFreeSegment);
-#endif
+
 	gotoxy(
 		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
 		_textPos.ScreenLine + _screenSize.FirstDocumentLine);
@@ -57,14 +43,12 @@ void Initialize()
 	_textPos.ScreenColumn = 0;
 	_textPos.ScreenLine = 0;
 
-#if __C64__
 	bgcolor(0);		// Black
 	bordercolor(0);	// Black
 	textcolor(13);  // Green
-#endif
 
 	_editorLinesCapacity = START_EDITOR_LINES_CAPACITY;
-	EnsureEditorLinesCapacity(1);// init:1
+	EnsureEditorLinesCapacity(1); // init:1
 
 	screensize(&_screenSize.Width, &_screenSize.Height);
 	_screenSize.EffectiveWidth = _screenSize.Width - LINE_NUMBER_OFFSET - 1;
@@ -239,8 +223,6 @@ unsigned int GetWorkingLine(unsigned int lineNumber)
 }
 
 
-#if __C64__ | __CX16__
-
 // Repaints the whole screen - optimzed version.
 // We have access to the screen memory, and can optimze a lot!
 void Invalidate(char *lineBuffer)
@@ -302,60 +284,6 @@ void Invalidate(char *lineBuffer)
 
 	_textPos.LineLength = _editorLines[_textPos.Line].length;
 }
-#else
-
-// Repaints the whole screen. 
-// This is the version, where we cannot access the screen memory directly. It's painfully slow.
-void Invalidate(char *lineBuffer)
-{
-	unsigned char i, line, startLine, endLine, currentLineLength;
-	unsigned char leftTextWindowPos, rightTextWindowPos;
-
-	leftTextWindowPos = _textPos.Column - _textPos.ScreenColumn;
-	rightTextWindowPos = leftTextWindowPos + _screenSize.Width;
-
-	startLine = _textPos.Line - _textPos.ScreenLine;
-	endLine = startLine + _screenSize.EffectiveHeight;
-
-	for (line = startLine; line < endLine; line++)
-	{
-		if (line <= _maxLine)
-		{
-			// Print line number.
-			gotoxy(0, line + _screenSize.FirstDocumentLine);
-			printf("%04d:", line + 1);
-
-			gotoxy(LINE_NUMBER_OFFSET, line + _screenSize.FirstDocumentLine);
-
-			if (line < _maxLine)
-			{
-				currentLineLength = GetWorkingLine(line);
-
-				for (i = 0; i < MAX_LINE_LENGTH; i++)
-				{
-					if (i >= leftTextWindowPos && i <= rightTextWindowPos)
-					{
-						cputc(_workingLineBuffer[i]);
-					}
-				}
-			}
-		}
-		else
-		{
-			for (i = leftTextWindowPos; i <= rightTextWindowPos; i++)
-			{
-				cputc(SPACE);
-			}
-		}
-	}
-
-	gotoxy(
-		_textPos.ScreenColumn + LINE_NUMBER_OFFSET,
-		_textPos.ScreenLine + _screenSize.FirstDocumentLine);
-
-	_textPos.LineLength = _editorLines[_textPos.Line].length;
-}
-#endif
 
 void LineBufferToCurrentScreenLine()
 {
@@ -420,7 +348,7 @@ void CursorRight()
 void DeleteLine(unsigned int lineNumber)
 {
 	LineSegment *tmpLineSegment;
-	unsigned char i;
+	register unsigned char i;
 
 	if (_maxLine == 0)
 	{
@@ -553,7 +481,7 @@ void Backspace()
 
 void CursorUp()
 {
-	if (_textPos.Line==0)
+	if (_textPos.Line==0U)
 	{
 		return;
 	}
@@ -632,9 +560,9 @@ void main(void)
 	char currentChar;
 
 	// ClearScreenEx(5, 3, 30, 10, 'A');
-	ClearScreen();
-	DrawWindow(5, 3, 20, 15, 42);
-	return;
+	// ClearScreen();
+	// DrawWindow(5, 3, 20, 15, 42);
+	// return;
 	
 	Initialize();
 	PrintLineNumber();
