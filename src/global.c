@@ -43,6 +43,8 @@ unsigned char _debugLineNo;
 // The max lines we can use.
 unsigned int _maxLine;
 
+PullDownMenu _pullDownMenu;
+
 void DebugPrint(const char *text, int value)
 {
 	gotoxy(1, _debugLineNo);

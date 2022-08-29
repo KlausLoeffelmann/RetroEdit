@@ -1,3 +1,4 @@
+#include "textgui.h" 
 
 #define KEY_RETURN 13
 #define KEY_CURUP 145
@@ -66,6 +67,7 @@ struct TextPosition
 	unsigned char ScreenLine;
 	unsigned char ScreenColumn;
 	unsigned char LineLength;
+	unsigned char *Text;
 };
 
 // TODO: We need to correct this for CX16 and Apple.
@@ -116,3 +118,5 @@ extern unsigned char _debugLineNo;
 
 // The max lines we can use.
 extern unsigned int _maxLine;
+
+extern PullDownMenu _pullDownMenu;

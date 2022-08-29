@@ -35,6 +35,69 @@ void EnsureEditorLinesCapacity(char init)
 	}
 }
 
+void DefinePullDownMenu()
+{
+	static struct MenuItem fileMenu, fileNewProjectMenuItem, fileOpenProjectMenuItem,
+		fileAddNewItemMenuItem, fileSeperator1MenuItem, fileSaveMenuItem,
+		fileSaveAsMenuItem, fileSeperator2MenuItem, fileExitMenuItem;
+
+	static struct MenuItem editMenu, editUndoMenuItem, editRedoMenuItem, editSeperator1MenuItem,
+		editCutMenuItem, editCopyMenuItem, editPasteMenuItem;
+
+	// Defining File menu.
+	fileMenu.Text = "&File";
+	fileNewProjectMenuItem.Text = "&New project...";
+	fileOpenProjectMenuItem.Text = "&Open project...";
+	fileAddNewItemMenuItem.Text = "&Add new item...";
+	fileAddNewItemMenuItem.CtrlKeyboardShortCut="a";
+	fileSeperator1MenuItem.Text = "-";
+	fileSaveMenuItem.Text = "Save file";
+	fileSaveMenuItem.CtrlKeyboardShortCut = "s";
+	fileSaveAsMenuItem.Text = "&Save file as...";
+	fileSeperator2MenuItem.Text = "-";
+	fileExitMenuItem.Text = "E&xit";
+
+	// Chaining File menu:
+	fileMenu.SubItem = &fileNewProjectMenuItem;
+	fileNewProjectMenuItem.NextItem = &fileOpenProjectMenuItem;
+	fileOpenProjectMenuItem.NextItem = &fileAddNewItemMenuItem;
+	fileAddNewItemMenuItem.NextItem = &fileSeperator1MenuItem;
+	fileSeperator1MenuItem.NextItem = &fileSaveMenuItem;
+	fileSaveMenuItem.NextItem = &fileSaveAsMenuItem;
+	fileSaveAsMenuItem.NextItem = &fileSeperator2MenuItem;
+	fileSeperator2MenuItem.NextItem = &fileExitMenuItem;
+	fileExitMenuItem.NextItem = NULL;
+
+	// Defining Edit menu.
+	editMenu.Text = "&Edit";
+	editUndoMenuItem.Text = "&Undo";
+	editUndoMenuItem.CtrlKeyboardShortCut = "z";
+	editRedoMenuItem.Text = "&Redo";
+	editRedoMenuItem.CtrlKeyboardShortCut = "r";
+	editSeperator1MenuItem.Text = "-";
+	editCutMenuItem.Text = "Cut";
+	editCutMenuItem.CtrlKeyboardShortCut = "x";
+	editCopyMenuItem.Text = "Copy";
+	editCopyMenuItem.CtrlKeyboardShortCut = "c";
+	editPasteMenuItem.Text = "Paste";
+	editPasteMenuItem.CtrlKeyboardShortCut = "v";
+
+	// Chaining of Edit-Menu:
+	editMenu.SubItem=&editUndoMenuItem;
+	editUndoMenuItem.NextItem=&editRedoMenuItem;
+	editRedoMenuItem.NextItem=&editSeperator1MenuItem;
+	editSeperator1MenuItem.NextItem=&editCutMenuItem;
+	editCutMenuItem.NextItem=&editCopyMenuItem;
+	editCopyMenuItem.NextItem=&editPasteMenuItem;
+	editPasteMenuItem.NextItem=NULL;
+
+	// Chaining of Top_level-Menus.
+	fileMenu.NextItem=&editMenu;
+	editMenu.NextItem=NULL;
+
+	_pullDownMenu.TopLevelItems = &fileMenu;
+}
+
 void Initialize()
 {
 	_maxLine = 0;
@@ -46,6 +109,10 @@ void Initialize()
 	bgcolor(0);		// Black
 	bordercolor(0);	// Black
 	textcolor(13);  // Green
+	clrscr();
+	
+	DefinePullDownMenu();
+	InitPullDownMenu(&_pullDownMenu);
 
 	_editorLinesCapacity = START_EDITOR_LINES_CAPACITY;
 	EnsureEditorLinesCapacity(1); // init:1
@@ -60,7 +127,6 @@ void Initialize()
 	_screenSize.EffectiveHeight = _screenSize.LastDocumentLine - _screenSize.FirstDocumentLine;
 	_debugLineNo = _screenSize.Height - 2;
 
-	clrscr();
 	cursor(1);
 
 	_maxLineSegment = 0;

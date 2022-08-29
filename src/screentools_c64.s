@@ -1,6 +1,7 @@
 .setcpu		"6502"
 .importzp	sp, sreg, regsave, regbank
 .importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
+.importzp   pusha, pushax
 
 SCREENMEM       = $0400         ; Start Screenbuffer C64
 COLORMEM        = $D800         ; Start Color Memory C64
@@ -35,11 +36,13 @@ CHAR_VERTICAL_LINE      = 93
 .code 
 
 ;
-; INTERNAL: Cleans up the C Parameter stack. Y holds param count.
-cleanCStack:    pha             ; we need to save a, since it could hold
-                tya             ; a return value's low byte (along with X, high byte of result)
-                adc sp
+; INTERNAL: Cleans up the C Parameter stack. Y holds param byte count.
+cleanCStack:
 .scope
+                pha             ; we need to save a, since it could hold
+                tya             ; a return value's low byte (along with X, high byte of result)
+                clc
+                adc sp
                 sta sp
                 bcc skipInc
                 inc sp+1
@@ -80,7 +83,6 @@ sml96:  	    and #$3f		; if A=32..95 then strip bits 6 and 7
 		        rts
 
 sml32:  	    eor #$80		; flip bit 7 (reverse on when off and vice versa)
-                ldx #0          ; For C compat, we return 16-bit in X/A (X-high, A-low)
                 rts;
 .endscope
 
@@ -235,7 +237,7 @@ _ClearScreenEx:
                 sta ptr1+1              ; is taken into account.
 
                 clc
-                ldy #$03                ; ScreenPtr+X1
+                iny                      ; ScreenPtr+X1
                 lda ptr1
                 adc (sp),y
                 sta ptr1
@@ -273,7 +275,7 @@ innerLoop:      sta (ptr1), y
 skipInc2:       dex
                 bne outerLoop
                 pla                     ; clean up stack.
-                ldy #5                  ; We have 5 paramters...
+                ldy #0                  ; We have 5 paramters...
                 jmp cleanCStack         ; ...we restore the C params stack and rts.
 .endscope
 
@@ -283,17 +285,17 @@ lineBeginnings: .word 00 * 40, 01 * 40, 02 * 40, 03 * 40, 04 * 40
                 .word 10 * 40, 11 * 40, 12 * 40, 13 * 40, 14 * 40
                 .word 15 * 40, 16 * 40, 17 * 40, 18 * 40, 19 * 40
                 .word 20 * 40, 21 * 40, 22 * 40, 23 * 40, 24 * 40
-
+.code
 
 ; Convert PET-ASCII Code to ScreenCode (Commodore 64)
 .scope
 _PetAsciiToScreenCode:
 .export _PetAsciiToScreenCode
                 jsr petsciiToSCode
-                ldy #1                  ; We have 1 param  
+                ldx #0                  ; We are returning A/X, petasciiToSCode only returned A
+                ldy #1                  ; We have 1 byte param  
                 jmp cleanCStack         ; 
 .endscope
-.code
 
 ; Draw Window
 ;                            y=3                 y=2                y=1                 y=0                   Akku
@@ -383,6 +385,98 @@ _DrawWindow:
                 sta xPos
                 lda #CHAR_VERTICAL_LINE
                 jsr vCharRepeat
+                ldy #5
                 jmp cleanCStack         ; ...we restore the C params stack and rts.
 .endscope
-.code
+
+; Draw UIText - Draws string containing accelerator key - defined with "&"" - in revers. (&File, &OK, S&earch)
+;                  y=3/2             y=1                y=0                     Akku
+; void DrawUIText(char *text, unsigned char line, unsigned char column, unsigned char color)
+_DrawUIText:
+.scope
+                color = tmp3
+                ptrString = ptr1
+                ptrScreen = ptr2
+.export _DrawUIText
+                jsr pusha
+                sta color
+                ldy #$04
+                lda (sp),y             ; Get address of string...
+                sta ptrString+1
+                dey
+                lda (sp),y 
+                sta ptrString          ; store in ptrString.
+                dey
+                dey
+                clc                     ; we must not rol the carry into the accu
+                lda (sp), y             ; Get line Param.
+                rol                     ; *2
+                tax                     ; becomes index into lineBeginnings
+                clc
+                lda #<(SCREENMEM-1)     ; Low- and High byte into the zeropage pointer
+                adc lineBeginnings, x
+                sta ptrScreen
+                lda #>(SCREENMEM-1)
+                adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
+                sta ptrScreen+1         ; is taken into account.
+
+                clc
+                iny                      ; ScreenPtr+X1
+                lda ptrScreen
+                adc (sp),y
+                sta ptrScreen
+                bcc skipInc
+                inc ptrScreen+1
+
+skipInc:        ldy #0
+                ldx #0
+                clc
+loop:           lda (ptrString),y       ; Get the first char
+                beq finish              ; 0-end -> we're done.
+                bcs skipRevTest         ; We found the & already, so we skip the test.
+                cmp #'&'                ; Hotkey?
+                beq nextChar            ; we overread this. Carry now is set!
+                clc                     ; Might have been >'&'', so the Carry has to recleared.
+skipRevTest:    php                     ; We need the original Carry
+                jsr petsciiToSCode      ; Convert to Screencode
+                plp                     ; Carry says, if we need to invert
+                bcc skipRevChar         ; carry was clear, so there wasn't an Ampersand
+                clc                     ; carry was set, we need to revert, but with clear Carry.
+                adc #128                ; +128 equals the revert char.
+                clc
+skipRevChar:    sta (ptrScreen),y
+                inx                     ; char count without '&'
+nextChar:       iny
+                bne loop
+finish:         txa
+                ldx #0                  ; high byte of return value
+                ldy #5                  ; 4 Params, but 1 is pointer.
+                jmp cleanCStack
+.endscope
+
+; GetUITextLength - Calculates length of string containing accelerator key - defined with "&"" - in revers. (&File, &OK, S&earch)
+;                          ptrText=1/0
+; unsigned char DrawUIText(char *text)
+_GetUITextLength:
+.scope
+                ptrString = ptr1
+.export _GetUITextLength
+                ldy #$01
+                lda (sp),y             ; Get address of string...
+                sta ptrString+1
+                dey
+                lda (sp),y 
+                sta ptrString          ; store in ptrString.
+
+                ldy #0
+                ldx #0
+loop:           lda (ptrString),y       ; Get the first char
+                beq finish              ; 0-end -> we're done.
+                cmp #'&'                ; Hotkey?
+                beq nextChar            ; we overread this. Carry now is set!
+nextChar:       iny
+                bne loop
+finish:         txa
+                ldy #2                  ; 1 Param, but pointer (2 bytes)
+                jmp cleanCStack
+.endscope
