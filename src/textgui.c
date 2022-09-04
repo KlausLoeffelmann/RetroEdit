@@ -26,4 +26,6 @@ void InitPullDownMenu(PullDownMenu *pullDownMenu)
         x = x + length + 2;
         topLevelItem = topLevelItem->NextItem;
     }
+
+    DrawHLine(0, 1, 40, CHAR_HORIZONTAL_LINE);
 }

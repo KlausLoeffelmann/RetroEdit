@@ -16,6 +16,7 @@
 
 #define MAX_LINE_LENGTH 160
 #define LINE_NUMBER_OFFSET 6
+#define FIRST_DOCUMENT_LINE 2
 
 #if __CX16__
 	#define EDITOR_MEMORY 0x9000

@@ -122,7 +122,7 @@ void Initialize()
 	
 	_screenSize.RightOffset = LINE_NUMBER_OFFSET - 1;
 	_statusBarLineNo = _screenSize.Height - 1;
-	_screenSize.FirstDocumentLine = 1;
+	_screenSize.FirstDocumentLine = FIRST_DOCUMENT_LINE;
 	_screenSize.LastDocumentLine = _screenSize.Height - 2;
 	_screenSize.EffectiveHeight = _screenSize.LastDocumentLine - _screenSize.FirstDocumentLine;
 	_debugLineNo = _screenSize.Height - 2;

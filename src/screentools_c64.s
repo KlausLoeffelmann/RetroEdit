@@ -90,7 +90,7 @@ sml32:  	    eor #$80		; flip bit 7 (reverse on when off and vice versa)
 ; INTERNAL: Draws a horizontal text line from characters.
 hCharRepeat: 
 .scope
-                ; tmp1: X, tmp2: y, tmp3: width, akku: character, x: color (todo)
+                ; tmp1: xPos, tmp2: yPos, tmp3: width, akku: character
                 xPos = tmp1
                 yPos = tmp2
                 width = tmp3
@@ -121,7 +121,7 @@ loop:           sta (ptr1),Y
                 rts
 .endscope
 
-                ; tmp1: X, tmp2: y, tmp4: height, akku: lineChar, x: color (todo)
+                ; tmp1: X, tmp2: y, tmp4: height, akku: lineChar
 vCharRepeat:
 .scope
                 xPos = tmp1
@@ -215,13 +215,40 @@ loop2:          sta SCREENMEM+$2ff, y
 
 .endscope
 
-;                            y=3                 y=2                y=1                 y=0              
+;                        column=3             line=2             width=1           lineChar=Akku
+; void DrawHLine(unsigned char column, unsigned char line, unsigned char length, unsigned char lineChar)
+.scope
+_DrawHLine:
+                xPos = tmp1
+                yPos = tmp2
+                width = tmp3
+.export _DrawHLine
+                jsr pusha
+                pha                     ; Clear/Fill Char on stack.
+                ldy #$03
+                clc                     ; we must not rol the carry into the accu
+                lda (sp), y             ; Get column Param.
+                sta xPos
+                dey
+                lda (sp), y             ; Get column Param.
+                sta yPos
+                dey
+                lda (sp), y             ; Get column Param.
+                sta width
+                pla
+                jsr hCharRepeat
+                ldy #4
+                jmp cleanCStack
+.endscope
+
+;                            column=3             line=2             width=1                 height=0           clearChar=Akku
 ; void ClearScreenEx(unsigned char column, unsigned char line, unsigned char width, unsigned char height, unsigned char clearChar)
 .scope
 _ClearScreenEx:
 .export _ClearScreenEx
 
                 ; Get pointer to left, upper corner in screen memory.
+                jsr pusha
                 pha                     ; Clear/Fill Char on stack.
                 ldy #$02
                 clc                     ; we must not rol the carry into the accu
@@ -275,7 +302,7 @@ innerLoop:      sta (ptr1), y
 skipInc2:       dex
                 bne outerLoop
                 pla                     ; clean up stack.
-                ldy #0                  ; We have 5 paramters...
+                ldy #5                  ; We have 5 paramters...
                 jmp cleanCStack         ; ...we restore the C params stack and rts.
 .endscope
 
@@ -294,7 +321,7 @@ _PetAsciiToScreenCode:
                 jsr petsciiToSCode
                 ldx #0                  ; We are returning A/X, petasciiToSCode only returned A
                 ldy #1                  ; We have 1 byte param  
-                jmp cleanCStack         ; 
+                rts
 .endscope
 
 ; Draw Window
@@ -307,6 +334,7 @@ _DrawWindow:
                 height = tmp4
 .scope
 .export _DrawWindow
+                jsr pusha               ; Akku on stack.
                 ldy #$03
                 lda (sp), y             ; Get column (xPos) param.
                 sta xPos                ; For DrawLine internal.
@@ -390,7 +418,7 @@ _DrawWindow:
 .endscope
 
 ; Draw UIText - Draws string containing accelerator key - defined with "&"" - in revers. (&File, &OK, S&earch)
-;                  y=3/2             y=1                y=0                     Akku
+;                  text=3/2             line=1           column=0               Akku
 ; void DrawUIText(char *text, unsigned char line, unsigned char column, unsigned char color)
 _DrawUIText:
 .scope
