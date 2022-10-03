@@ -37,65 +37,58 @@ void EnsureEditorLinesCapacity(char init)
 
 void DefinePullDownMenu()
 {
-	static struct MenuItem fileMenu, fileNewProjectMenuItem, fileOpenProjectMenuItem,
-		fileAddNewItemMenuItem, fileSeperator1MenuItem, fileSaveMenuItem,
-		fileSaveAsMenuItem, fileSeperator2MenuItem, fileExitMenuItem;
+	static struct MenuItem *fileMenu, *fileNewProjectMenuItem, *fileOpenProjectMenuItem,
+		*fileAddNewItemMenuItem, *fileSeperator1MenuItem, *fileSaveMenuItem,
+		*fileSaveAsMenuItem, *fileSeperator2MenuItem, *fileExitMenuItem;
 
-	static struct MenuItem editMenu, editUndoMenuItem, editRedoMenuItem, editSeperator1MenuItem,
-		editCutMenuItem, editCopyMenuItem, editPasteMenuItem;
+	static struct MenuItem *editMenu, *editUndoMenuItem, *editRedoMenuItem, *editSeperator1MenuItem,
+		*editCutMenuItem, *editCopyMenuItem, *editPasteMenuItem;
 
 	// Defining File menu.
-	fileMenu.Text = "&File";
-	fileNewProjectMenuItem.Text = "&New project...";
-	fileOpenProjectMenuItem.Text = "&Open project...";
-	fileAddNewItemMenuItem.Text = "&Add new item...";
-	fileAddNewItemMenuItem.CtrlKeyboardShortCut="a";
-	fileSeperator1MenuItem.Text = "-";
-	fileSaveMenuItem.Text = "Save file";
-	fileSaveMenuItem.CtrlKeyboardShortCut = "s";
-	fileSaveAsMenuItem.Text = "&Save file as...";
-	fileSeperator2MenuItem.Text = "-";
-	fileExitMenuItem.Text = "E&xit";
+	fileMenu = DefineMenuItem("&File", 0, 0, 0);
+	fileNewProjectMenuItem = DefineMenuItem("&New project...", 0, 0, 0);
+	fileOpenProjectMenuItem = DefineMenuItem("&Open project...", 0, 0, 0);
+	fileAddNewItemMenuItem = DefineMenuItem("&Add new item...", 0, 0, "a");
+	fileSeperator1MenuItem = DefineMenuItem("-", 0, 0, 0);
+	fileSaveMenuItem = DefineMenuItem("Save file", 0, 0, "s");
+	fileSaveAsMenuItem = DefineMenuItem("&Save file as...", 0, 0, 0);
+	fileSeperator2MenuItem = DefineMenuItem("-", 0, 0, 0);
+	fileExitMenuItem = DefineMenuItem("E&xit", 0, 0, 0);
 
 	// Chaining File menu:
-	fileMenu.SubItem = &fileNewProjectMenuItem;
-	fileNewProjectMenuItem.NextItem = &fileOpenProjectMenuItem;
-	fileOpenProjectMenuItem.NextItem = &fileAddNewItemMenuItem;
-	fileAddNewItemMenuItem.NextItem = &fileSeperator1MenuItem;
-	fileSeperator1MenuItem.NextItem = &fileSaveMenuItem;
-	fileSaveMenuItem.NextItem = &fileSaveAsMenuItem;
-	fileSaveAsMenuItem.NextItem = &fileSeperator2MenuItem;
-	fileSeperator2MenuItem.NextItem = &fileExitMenuItem;
-	fileExitMenuItem.NextItem = NULL;
+	fileMenu->SubItem = fileNewProjectMenuItem;
+	fileNewProjectMenuItem->NextItem = fileOpenProjectMenuItem;
+	fileOpenProjectMenuItem->NextItem = fileAddNewItemMenuItem;
+	fileAddNewItemMenuItem->NextItem = fileSeperator1MenuItem;
+	fileSeperator1MenuItem->NextItem = fileSaveMenuItem;
+	fileSaveMenuItem->NextItem = fileSaveAsMenuItem;
+	fileSaveAsMenuItem->NextItem = fileSeperator2MenuItem;
+	fileSeperator2MenuItem->NextItem = fileExitMenuItem;
+	fileExitMenuItem->NextItem = NULL;
 
 	// Defining Edit menu.
-	editMenu.Text = "&Edit";
-	editUndoMenuItem.Text = "&Undo";
-	editUndoMenuItem.CtrlKeyboardShortCut = "z";
-	editRedoMenuItem.Text = "&Redo";
-	editRedoMenuItem.CtrlKeyboardShortCut = "r";
-	editSeperator1MenuItem.Text = "-";
-	editCutMenuItem.Text = "Cut";
-	editCutMenuItem.CtrlKeyboardShortCut = "x";
-	editCopyMenuItem.Text = "Copy";
-	editCopyMenuItem.CtrlKeyboardShortCut = "c";
-	editPasteMenuItem.Text = "Paste";
-	editPasteMenuItem.CtrlKeyboardShortCut = "v";
+	editMenu = DefineMenuItem("&Edit", 0, 0, 0);
+	editUndoMenuItem = DefineMenuItem("&Undo", 0, 0, "z");
+	editRedoMenuItem = DefineMenuItem("&Redo", 0, 0, "r");
+	editSeperator1MenuItem = DefineMenuItem("-", 0, 0, 0);
+	editCutMenuItem = DefineMenuItem("Cut", 0, 0, "x");
+	editCopyMenuItem = DefineMenuItem("Copy", 0, 0, "c");
+	editPasteMenuItem = DefineMenuItem("Paste", 0, 0, "v");
 
 	// Chaining of Edit-Menu:
-	editMenu.SubItem=&editUndoMenuItem;
-	editUndoMenuItem.NextItem=&editRedoMenuItem;
-	editRedoMenuItem.NextItem=&editSeperator1MenuItem;
-	editSeperator1MenuItem.NextItem=&editCutMenuItem;
-	editCutMenuItem.NextItem=&editCopyMenuItem;
-	editCopyMenuItem.NextItem=&editPasteMenuItem;
-	editPasteMenuItem.NextItem=NULL;
+	editMenu->SubItem = editUndoMenuItem;
+	editUndoMenuItem->NextItem = editRedoMenuItem;
+	editRedoMenuItem->NextItem = editSeperator1MenuItem;
+	editSeperator1MenuItem->NextItem = editCutMenuItem;
+	editCutMenuItem->NextItem = editCopyMenuItem;
+	editCopyMenuItem->NextItem = editPasteMenuItem;
+	editPasteMenuItem->NextItem = NULL;
 
 	// Chaining of Top_level-Menus.
-	fileMenu.NextItem=&editMenu;
-	editMenu.NextItem=NULL;
+	fileMenu->NextItem = editMenu;
+	editMenu->NextItem = NULL;
 
-	_pullDownMenu.TopLevelItems = &fileMenu;
+	_pullDownMenu.FirstTopLevelItem = fileMenu;
 }
 
 void Initialize()
@@ -107,10 +100,10 @@ void Initialize()
 	_textPos.ScreenLine = 0;
 
 	bgcolor(0);		// Black
-	bordercolor(0);	// Black
-	textcolor(13);  // Green
+	bordercolor(0); // Black
+	textcolor(13);	// Green
 	clrscr();
-	
+
 	DefinePullDownMenu();
 	InitPullDownMenu(&_pullDownMenu);
 
@@ -119,7 +112,7 @@ void Initialize()
 
 	screensize(&_screenSize.Width, &_screenSize.Height);
 	_screenSize.EffectiveWidth = _screenSize.Width - LINE_NUMBER_OFFSET - 1;
-	
+
 	_screenSize.RightOffset = LINE_NUMBER_OFFSET - 1;
 	_statusBarLineNo = _screenSize.Height - 1;
 	_screenSize.FirstDocumentLine = FIRST_DOCUMENT_LINE;
@@ -287,7 +280,6 @@ unsigned int GetWorkingLine(unsigned int lineNumber)
 
 	return lineLength;
 }
-
 
 // Repaints the whole screen - optimzed version.
 // We have access to the screen memory, and can optimze a lot!
@@ -473,9 +465,9 @@ void InsertChar(char currentChar)
 				_textPos.ScreenColumn++;
 			}
 			else
-			{	// We invalidate everything, and pass the current lineBuffer.
+			{ // We invalidate everything, and pass the current lineBuffer.
 				// Invalidate then uses this buffer instead of the getting
-				// the line from memory in a temporary buffer for the current line.			
+				// the line from memory in a temporary buffer for the current line.
 				Invalidate(_lineBuffer);
 			}
 		}
@@ -547,7 +539,7 @@ void Backspace()
 
 void CursorUp()
 {
-	if (_textPos.Line==0U)
+	if (_textPos.Line == 0U)
 	{
 		return;
 	}
@@ -579,7 +571,7 @@ void CursorDown()
 
 	SaveBufferToEditorMemory();
 	_textPos.Line++;
-	if (_textPos.ScreenLine<=_screenSize.EffectiveHeight)
+	if (_textPos.ScreenLine <= _screenSize.EffectiveHeight)
 	{
 		_textPos.ScreenLine++;
 	}
@@ -629,7 +621,7 @@ void main(void)
 	// ClearScreen();
 	// DrawWindow(5, 3, 20, 15, 42);
 	// return;
-	
+
 	Initialize();
 	PrintLineNumber();
 
@@ -637,6 +629,8 @@ void main(void)
 	{
 		UpdateDocInfo(_textPos.Line, _textPos.Column, currentChar);
 		currentChar = cgetc();
+
+		HandlePullDownMenu(&_pullDownMenu, currentChar);
 
 		if (currentChar == KEY_RETURN)
 		{
