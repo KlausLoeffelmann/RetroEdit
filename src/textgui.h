@@ -1,12 +1,28 @@
+typedef struct TextWindow TextWindow;
 typedef struct ListItem ListItem;
 typedef struct Listbox Listbox;
 typedef struct MenuItem MenuItem;
 typedef struct PullDownMenu PullDownMenu;
 
-#define ITEMSTATUS_ENABLED = 1;
-#define ITEMSTATUS_CHECKED = 2;
-#define ITEMSTATUS_VISIBLE = 4;
-#define ITEMSTATUS_HIGHLIGTHED = 8;
+#define ITEMSTATUS_ENABLED 1;
+#define ITEMSTATUS_CHECKED 2;
+#define ITEMSTATUS_VISIBLE 4;
+#define ITEMSTATUS_HIGHLIGTHED 8;
+
+#define MAX_SCREEN_WIDTH 40;
+#define MAX_SCREEN_HEIGHT 25;
+#define SCREEN_MEMORY 1024;
+
+struct TextWindow
+{
+    unsigned char Handle;
+    unsigned char Line;
+    unsigned char Column;
+    unsigned char Width;
+    unsigned char Height;
+    unsigned char CurrentLine;
+    unsigned char CurrentColumn;
+};
 
 struct ListItem
 {
@@ -41,7 +57,9 @@ struct PullDownMenu
     MenuItem *FirstTopLevelItem;
 };
 
+TextWindow *DefineTextWindow(unsigned char line, unsigned char col, unsigned char width, unsigned char height);
 void InitPullDownMenu(PullDownMenu *pullDownMenu);
+unsigned char GetAcceleratorKey(register char *text);
 void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey);
 void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey);
 Listbox* InitList(char *title);

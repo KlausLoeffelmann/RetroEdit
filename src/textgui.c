@@ -10,10 +10,99 @@
 #define PULLDOWNMENU_BACKGROUNDCOLOR 0
 #define INITIAL_LISTBOX_ITEMCOUNT 4
 
-unsigned char GetAcceleratorKey(char *text)
+unsigned char _acceleratorKeyLookup[] = {
+    176, 191, 188, 177, 187, 165, 180,
+    162, 181, 161, 182, 167, 170, 185,
+    175, 171, 178, 174, 163, 184, 190,
+    179, 189, 183, 173};
+
+TextWindow *DefineTextWindow(unsigned char line, unsigned char col, unsigned char width, unsigned char height)
 {
-    unsigned char index = 0;
-    unsigned char currentChar;
+    TextWindow *textWindow;
+
+    DrawWindow(col, line, width, height, 0);
+
+    textWindow = malloc(sizeof(TextWindow));
+    textWindow->Line = line;
+    textWindow->Column = col;
+    textWindow->Width = width;
+    textWindow->Height = height;
+    textWindow->Handle = 0;
+    textWindow->CurrentColumn = 0;
+    textWindow->CurrentLine = 0;
+
+    return textWindow;
+}
+
+void TextWindowPrint(TextWindow *textWindow, register char *text)
+{
+    register int *screenMemory;
+    unsigned char maxCol, maxLine;
+
+    screenMemory = (int *)SCREEN_MEMORY;
+    maxCol = textWindow->Column + textWindow->Height - 2;
+    maxLine = textWindow->Line + textWindow->Width - 2;
+
+    screenMemory = screenMemory +
+                   textWindow->CurrentLine * MAX_SCREEN_WIDTH +
+                   textWindow->CurrentColumn;
+
+    do
+    {
+        *screenMemory = *text;
+        ++text;
+
+        ++textWindow->CurrentColumn;
+        if (textWindow->CurrentColumn > maxCol)
+        {
+            textWindow->CurrentColumn = textWindow->Column + 1;
+            ++textWindow->CurrentLine;
+
+            if (textWindow->CurrentLine > maxLine)
+            {
+                // ScrollUp!
+                --textWindow->CurrentLine;
+            }
+
+            screenMemory = screenMemory +
+                           textWindow->CurrentLine * MAX_SCREEN_WIDTH +
+                           textWindow->CurrentColumn;
+        }
+        else
+        {
+            ++screenMemory;
+        }
+
+    } while (*text != 0);
+}
+
+void InitPullDownMenu(PullDownMenu *pullDownMenu)
+{
+    MenuItem *topLevelItem = pullDownMenu->FirstTopLevelItem;
+
+    unsigned char x, accKey;
+    unsigned char length;
+
+    x = 2;
+    length = 0;
+
+    while (topLevelItem != NULL)
+    {
+        unsigned char *menuText = topLevelItem->ListItem->Text;
+        length = DrawUIText(menuText, x, 0, PULLDOWNMENU_BACKGROUNDCOLOR);
+        accKey = GetAcceleratorKey(menuText);
+        topLevelItem->ListItem->AcceleratorKey = accKey;
+        x = x + length + 2;
+        topLevelItem = topLevelItem->NextItem;
+    }
+
+    DrawHLine(0, 1, 40, CHAR_HORIZONTAL_LINE);
+}
+
+unsigned char GetAcceleratorKey(register char *text)
+{
+    register unsigned char index = 0;
+    register unsigned char currentChar;
 
     for (;;)
     {
@@ -25,11 +114,14 @@ unsigned char GetAcceleratorKey(char *text)
         if (currentChar == '&')
         {
             ++index;
-            return text[index];
+            currentChar = _acceleratorKeyLookup[text[index] - 193];
+            return currentChar;
         }
 
         ++index;
     }
+
+    return 0;
 }
 
 MenuItem *DefineMenuItem(
@@ -51,28 +143,6 @@ MenuItem *DefineMenuItem(
     menuItem->ListItem = listItem;
 
     return menuItem;
-}
-
-void InitPullDownMenu(PullDownMenu *pullDownMenu)
-{
-    register MenuItem *topLevelItem = pullDownMenu->FirstTopLevelItem;
-
-    unsigned char x;
-    unsigned char length;
-
-    x = 2;
-    length = 0;
-
-    while (topLevelItem != NULL)
-    {
-        register unsigned char *menuText = topLevelItem->ListItem->Text;
-        length = DrawUIText(menuText, x, 0, PULLDOWNMENU_BACKGROUNDCOLOR);
-        topLevelItem->ListItem->AcceleratorKey = GetAcceleratorKey(menuText);
-        x = x + length + 2;
-        topLevelItem = topLevelItem->NextItem;
-    }
-
-    DrawHLine(0, 1, 40, CHAR_HORIZONTAL_LINE);
 }
 
 void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey)
@@ -101,6 +171,7 @@ Listbox *InitList(char *title)
     ListItem *testArray;
 
     listbox = malloc(sizeof(Listbox));
+
     listbox->Count = 0;
     listbox->ReservedCount = 4;
     listbox->ListItems = malloc(sizeof(ListItem) * 4);
@@ -122,6 +193,7 @@ void AddListItem(Listbox *listbox, ListItem *listItem)
     }
 
     listbox->ListItems[listbox->Count] = *listItem;
+    ++listbox->Count;
 }
 
 void OpenMenu(MenuItem *menuItem)
@@ -136,7 +208,7 @@ void OpenMenu(MenuItem *menuItem)
         return;
     }
 
-    listbox=InitList(NULL);
+    listbox = InitList(NULL);
     currentMenuItem = menuItem->SubItem;
 
     // Convert the menu items to a listbox:
@@ -150,7 +222,11 @@ void OpenMenu(MenuItem *menuItem)
         listItem->ID_ListItem = menuListItem->ID_ListItem;
         listItem->Text = menuListItem->Text;
         listItem->ItemStatus = menuListItem->ItemStatus;
-        listItem->AcceleratorKey=menuListItem->AcceleratorKey;
-        listItem->CtrlKeyboardShortCut=menuListItem->CtrlKeyboardShortCut;
+        listItem->AcceleratorKey = menuListItem->AcceleratorKey;
+        listItem->CtrlKeyboardShortCut = menuListItem->CtrlKeyboardShortCut;
+
+        AddListItem(listbox, listItem);
+
+        currentMenuItem = currentMenuItem->NextItem;
     }
 }

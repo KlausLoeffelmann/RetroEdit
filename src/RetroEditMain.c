@@ -37,11 +37,11 @@ void EnsureEditorLinesCapacity(char init)
 
 void DefinePullDownMenu()
 {
-	static struct MenuItem *fileMenu, *fileNewProjectMenuItem, *fileOpenProjectMenuItem,
+	struct MenuItem *fileMenu, *fileNewProjectMenuItem, *fileOpenProjectMenuItem,
 		*fileAddNewItemMenuItem, *fileSeperator1MenuItem, *fileSaveMenuItem,
 		*fileSaveAsMenuItem, *fileSeperator2MenuItem, *fileExitMenuItem;
 
-	static struct MenuItem *editMenu, *editUndoMenuItem, *editRedoMenuItem, *editSeperator1MenuItem,
+	struct MenuItem *editMenu, *editUndoMenuItem, *editRedoMenuItem, *editSeperator1MenuItem,
 		*editCutMenuItem, *editCopyMenuItem, *editPasteMenuItem;
 
 	// Defining File menu.
