@@ -73,7 +73,7 @@ void DefinePullDownMenu()
 	editSeperator1MenuItem = DefineMenuItem("-", 0, 0, 0);
 	editCutMenuItem = DefineMenuItem("Cut", 0, 0, "x");
 	editCopyMenuItem = DefineMenuItem("Copy", 0, 0, "c");
-	editPasteMenuItem = DefineMenuItem("Paste", 0, 0, "v");
+	editPasteMenuItem = DefineMenuItem("Pa&ste", 0, 0, "v");
 
 	// Chaining of Edit-Menu:
 	editMenu->SubItem = editUndoMenuItem;
@@ -636,7 +636,7 @@ void main(void)
 		{
 			HandleReturnKey();
 		}
-		else if (currentChar == KEY_BACKSPACE)
+			else if (currentChar == KEY_BACKSPACE)
 		{
 			Backspace();
 		}

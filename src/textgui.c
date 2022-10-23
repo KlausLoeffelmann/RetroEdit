@@ -89,9 +89,8 @@ void InitPullDownMenu(PullDownMenu *pullDownMenu)
     while (topLevelItem != NULL)
     {
         unsigned char *menuText = topLevelItem->ListItem->Text;
+        topLevelItem->Left = x;
         length = DrawUIText(menuText, x, 0, PULLDOWNMENU_BACKGROUNDCOLOR);
-        accKey = GetAcceleratorKey(menuText);
-        topLevelItem->ListItem->AcceleratorKey = accKey;
         x = x + length + 2;
         topLevelItem = topLevelItem->NextItem;
     }
@@ -99,29 +98,37 @@ void InitPullDownMenu(PullDownMenu *pullDownMenu)
     DrawHLine(0, 1, 40, CHAR_HORIZONTAL_LINE);
 }
 
-unsigned char GetAcceleratorKey(register char *text)
+unsigned char GetAcceleratorKeyAndLength(register char *text, unsigned char *length)
 {
     register unsigned char index = 0;
     register unsigned char currentChar;
+    unsigned char accKey;
+
+    accKey = 0;
 
     for (;;)
     {
         currentChar = text[index];
 
-        if (currentChar == NULL)
-            break;
-
         if (currentChar == '&')
         {
             ++index;
-            currentChar = _acceleratorKeyLookup[text[index] - 193];
-            return currentChar;
+            accKey = _acceleratorKeyLookup[text[index] - 193];
+            currentChar = text[index];
         }
+
+        if (currentChar == NULL) break;
 
         ++index;
     }
 
-    return 0;
+    if (accKey > 0)
+    {
+        --index;
+    }
+
+    *length = index;
+    return accKey;
 }
 
 MenuItem *DefineMenuItem(
@@ -133,15 +140,21 @@ MenuItem *DefineMenuItem(
     ListItem *listItem;
     MenuItem *menuItem;
 
+    unsigned char length, accKey;
+    length = 42;
+
     listItem = malloc(sizeof(ListItem));
     menuItem = malloc(sizeof(MenuItem));
 
     listItem->Text = text;
     listItem->ID_ListItem = id;
     listItem->CtrlKeyboardShortCut = ctrlKeyboardShortCut;
+    accKey = GetAcceleratorKeyAndLength(text, &length);
+
+    listItem->AcceleratorKey = accKey;
+    listItem->TextLength = length;
 
     menuItem->ListItem = listItem;
-
     return menuItem;
 }
 
@@ -193,10 +206,17 @@ void AddListItem(Listbox *listbox, ListItem *listItem)
     }
 
     listbox->ListItems[listbox->Count] = *listItem;
+
+    // Calculate width of the ListBox
+    if (listbox->Width < listItem->TextLength)
+    {
+        listbox->Width = listItem->TextLength;
+    }
+    
     ++listbox->Count;
 }
 
-void OpenMenu(MenuItem *menuItem)
+unsigned char OpenMenu(MenuItem *menuItem)
 {
     MenuItem *currentMenuItem;
     Listbox *listbox;
@@ -205,7 +225,7 @@ void OpenMenu(MenuItem *menuItem)
     if (menuItem->SubItem == NULL)
     {
         // We have no sub items, we return.
-        return;
+        return NULL;
     }
 
     listbox = InitList(NULL);
@@ -214,19 +234,45 @@ void OpenMenu(MenuItem *menuItem)
     // Convert the menu items to a listbox:
     while (currentMenuItem != NULL)
     {
-        ListItem *listItem, *menuListItem;
-        unsigned char currentTextLength;
-
-        listItem = malloc(sizeof(ListItem));
-        menuListItem = currentMenuItem->ListItem;
-        listItem->ID_ListItem = menuListItem->ID_ListItem;
-        listItem->Text = menuListItem->Text;
-        listItem->ItemStatus = menuListItem->ItemStatus;
-        listItem->AcceleratorKey = menuListItem->AcceleratorKey;
-        listItem->CtrlKeyboardShortCut = menuListItem->CtrlKeyboardShortCut;
-
-        AddListItem(listbox, listItem);
-
+        AddListItem(listbox, currentMenuItem->ListItem);
         currentMenuItem = currentMenuItem->NextItem;
+    }
+
+    listbox->Left = menuItem->Left;
+    listbox->Top = 1;
+    listbox->MaxHeight = 20;
+    return HandleListBox(listbox);
+}
+
+unsigned char HandleListBox(Listbox *listbox)
+{
+    unsigned char height, color, i, left, currentLine;
+    ListItem *currentListItem;
+
+    currentListItem = listbox->ListItems;
+
+    if (currentListItem == NULL)
+    {
+        return NULL;
+    }
+
+    if (listbox->Count <= listbox->MaxHeight)
+    {
+        height = listbox->Count;
+    }
+    else
+    {
+        height = listbox->MaxHeight;
+    }
+
+    ++height;
+    left = listbox->Left;
+
+    DrawWindow(left, listbox->Top, listbox->Width + 3, height, color);
+    left += 2;
+
+    for (i = 0; i < listbox->Count; i++)
+    {
+        DrawUIText(listbox->ListItems[i].Text, left, i + 2, color);
     }
 }

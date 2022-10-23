@@ -33,6 +33,7 @@ struct ListItem
     // We need this to be compatible to MenuItems.
     unsigned char CtrlKeyboardShortCut;
     unsigned char AcceleratorKey;
+    unsigned char TextLength;
 };
 
 struct Listbox
@@ -42,6 +43,10 @@ struct Listbox
     unsigned char Title;
     void *CallBack;
     ListItem* ListItems;
+    unsigned char Left;
+    unsigned char Top;
+    unsigned char MaxHeight;
+    unsigned char Width;
 };
 
 struct MenuItem
@@ -50,6 +55,7 @@ struct MenuItem
     MenuItem *NextItem;
     MenuItem *SubItem;
     void *CallBack;
+    unsigned char Left;
 };
 
 struct PullDownMenu
@@ -59,10 +65,11 @@ struct PullDownMenu
 
 TextWindow *DefineTextWindow(unsigned char line, unsigned char col, unsigned char width, unsigned char height);
 void InitPullDownMenu(PullDownMenu *pullDownMenu);
-unsigned char GetAcceleratorKey(register char *text);
+unsigned char GetAcceleratorKeyAndLength(register char *text, unsigned char *length);
 void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey);
 void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey);
 Listbox* InitList(char *title);
 void AddListItem(Listbox *listbox, ListItem *listItem);
-void OpenMenu(MenuItem *menuItem);
+unsigned char OpenMenu(MenuItem *menuItem);
 MenuItem *DefineMenuItem(char *text, unsigned char id, unsigned char itemStatus, unsigned char ctrlKeyboardShortCut);
+unsigned char HandleListBox(Listbox *listbox);

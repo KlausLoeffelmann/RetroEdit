@@ -335,7 +335,7 @@ _DrawWindow:
 .scope
 .export _DrawWindow
                 jsr pusha               ; Akku on stack.
-                ldy #$03
+                ldy #$04
                 lda (sp), y             ; Get column (xPos) param.
                 sta xPos                ; For DrawLine internal.
                 dey
@@ -441,10 +441,10 @@ _DrawUIText:
                 rol                     ; *2
                 tax                     ; becomes index into lineBeginnings
                 clc
-                lda #<(SCREENMEM-1)     ; Low- and High byte into the zeropage pointer
+                lda #<(SCREENMEM)     ; Low- and High byte into the zeropage pointer
                 adc lineBeginnings, x
                 sta ptrScreen
-                lda #>(SCREENMEM-1)
+                lda #>(SCREENMEM)
                 adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
                 sta ptrScreen+1         ; is taken into account.
 
@@ -463,8 +463,16 @@ loop:           lda (ptrString),y       ; Get the first char
                 beq finish              ; 0-end -> we're done.
                 bcs skipRevTest         ; We found the & already, so we skip the test.
                 cmp #'&'                ; Hotkey?
-                beq nextChar            ; we overread this. Carry now is set!
-                clc                     ; Might have been >'&'', so the Carry has to recleared.
+                beq nextCharS1          ; we overread this. Carry now is set!
+                jmp nextCharS2
+nextCharS1:     pha
+                lda ptrScreen
+                bne nonEqual
+                dec ptrScreen+1
+nonEqual:       dec ptrScreen
+                pla
+                jmp nextChar                
+nextCharS2:     clc                     ; Might have been >'&'', so the Carry has to recleared.
 skipRevTest:    php                     ; We need the original Carry
                 jsr petsciiToSCode      ; Convert to Screencode
                 plp                     ; Carry says, if we need to invert
