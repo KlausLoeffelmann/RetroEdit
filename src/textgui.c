@@ -11,10 +11,14 @@
 #define INITIAL_LISTBOX_ITEMCOUNT 4
 
 unsigned char _acceleratorKeyLookup[] = {
-    176, 191, 188, 177, 187, 165, 180,
-    162, 181, 161, 182, 167, 170, 185,
-    175, 171, 178, 174, 163, 184, 190,
-    179, 189, 183, 173};
+    //a   b    c    d    e    f    g  
+    176, 191, 188, 172, 177, 187, 165, 
+    //h   i    j    k    l    m    n
+    180, 162, 181, 161, 182, 167, 170, 
+    //o   p    q    r    s    t    u
+    185, 175, 171, 178, 174, 163, 184, 
+    //v   w    x    y    z
+    190, 179, 189, 183, 173};
 
 TextWindow *DefineTextWindow(unsigned char line, unsigned char col, unsigned char width, unsigned char height)
 {
@@ -169,6 +173,12 @@ void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey)
     {
         if (menuItem->ListItem->AcceleratorKey == pressedKey)
         {
+            // printf(
+            //     "Found menu:%s w/ key:%i and 1. subitem: %s\n",
+            //     menuItem->ListItem->Text,
+            //     menuItem->ListItem->AcceleratorKey,
+            //     menuItem->SubItem->ListItem->Text);
+
             OpenMenu(menuItem);
             break;
         }
