@@ -231,6 +231,9 @@ unsigned char OpenMenu(MenuItem *menuItem)
     MenuItem *currentMenuItem;
     Listbox *listbox;
     unsigned char maxTextLength;
+    char currentChar;
+
+    cursor(0);
 
     if (menuItem->SubItem == NULL)
     {
@@ -251,17 +254,19 @@ unsigned char OpenMenu(MenuItem *menuItem)
     listbox->Left = menuItem->Left;
     listbox->Top = 1;
     listbox->MaxHeight = 20;
-    return HandleListBox(listbox);
+    currentChar = HandleListBox(listbox);
+    cursor(1);
+
+    return currentChar;
 }
 
 unsigned char HandleListBox(Listbox *listbox)
 {
-    unsigned char height, color, i, left, currentLine;
-    ListItem *currentListItem;
+    unsigned char height, color, i, left, currentLine, exit;
+    ListItem currentListItem;
+    unsigned char currentChar;
 
-    currentListItem = listbox->ListItems;
-
-    if (currentListItem == NULL)
+    if (listbox->ListItems == NULL)
     {
         return NULL;
     }
@@ -283,8 +288,43 @@ unsigned char HandleListBox(Listbox *listbox)
 
     for (i = 0; i < listbox->Count; i++)
     {
-        ListItem listItem;
-        listItem = listbox->ListItems[i];
-        DrawUIText(listItem.Text, left, i + 2, listItem.Color);
+        currentListItem = listbox->ListItems[i];
+        DrawUIText(currentListItem.Text, left, i + 2, currentListItem.Color);
     }
+
+    // Main control loop
+    currentListItem = listbox->ListItems[0];
+    i = 0;
+    exit = 0;
+
+    do
+    {
+        // Draw the Item invers:
+        DrawUIText(currentListItem.Text, left, i + 2, currentListItem.Color + 0x80);
+        currentChar = cgetc();
+        DrawUIText(currentListItem.Text, left, i + 2, currentListItem.Color);
+
+        if (currentChar == KEY_CURDOWN)
+        {
+            ++i;
+            if (i > listbox->Count)
+            {
+                i = listbox->Count;
+            }
+        }
+        else if (currentChar == KEY_CURUP)
+        {
+            if (i > 0)
+            {
+                --i;
+            }
+        }
+        else
+        {
+            exit = 1;
+        }
+
+        currentListItem = listbox->ListItems[0];
+
+    } while (exit == 0);
 }

@@ -1,16 +1,5 @@
 #include "textgui.h" 
 
-#define KEY_RETURN 13
-#define KEY_CURUP 145
-#define KEY_CURDOWN 17
-#define KEY_CURLEFT 157
-#define KEY_CURRIGHT 29
-#define KEY_ESC 3
-#define KEY_BACKSPACE 20
-#define KEY_DELETE 148
-#define KEY_ERASELINE 5
-#define KEY_TAB 9
-
 #define SEGMENT_TEXT_LENGTH 10
 #define START_EDITOR_LINES_CAPACITY 4
 

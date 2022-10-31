@@ -504,7 +504,7 @@ skipRevTest:    php                     ; We need the original Carry
                 adc #$80                ; +0x80 equals the revert char.
 skipRevChar:    bit color               ; Sets N, when bit 7 is set in color.
                 bpl doNotadd
-                adc #$80                ; We're reversing when bit 7 of color is set.
+                ora #$80                ; We're reversing when bit 7 of color is set.
 doNotadd:       clc
                 sta (ptrScreen),y
                 lda color

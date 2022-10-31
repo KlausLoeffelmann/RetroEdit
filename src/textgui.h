@@ -13,6 +13,17 @@ typedef struct PullDownMenu PullDownMenu;
 #define MAX_SCREEN_HEIGHT 25;
 #define SCREEN_MEMORY 1024;
 
+#define KEY_RETURN 13
+#define KEY_CURUP 145
+#define KEY_CURDOWN 17
+#define KEY_CURLEFT 157
+#define KEY_CURRIGHT 29
+#define KEY_ESC 3
+#define KEY_BACKSPACE 20
+#define KEY_DELETE 148
+#define KEY_ERASELINE 5
+#define KEY_TAB 9
+
 struct TextWindow
 {
     unsigned char Handle;
