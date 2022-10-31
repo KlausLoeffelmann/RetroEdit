@@ -94,7 +94,7 @@ void InitPullDownMenu(PullDownMenu *pullDownMenu)
     {
         unsigned char *menuText = topLevelItem->ListItem->Text;
         topLevelItem->Left = x;
-        length = DrawUIText(menuText, x, 0, PULLDOWNMENU_BACKGROUNDCOLOR);
+        length = DrawUIText(menuText, x, 0, topLevelItem->ListItem->Color);
         x = x + length + 2;
         topLevelItem = topLevelItem->NextItem;
     }
@@ -139,7 +139,8 @@ MenuItem *DefineMenuItem(
     char *text,
     unsigned char id,
     unsigned char itemStatus,
-    unsigned char ctrlKeyboardShortCut)
+    unsigned char ctrlKeyboardShortCut,
+    unsigned char color)
 {
     ListItem *listItem;
     MenuItem *menuItem;
@@ -153,6 +154,7 @@ MenuItem *DefineMenuItem(
     listItem->Text = text;
     listItem->ID_ListItem = id;
     listItem->CtrlKeyboardShortCut = ctrlKeyboardShortCut;
+    listItem->Color = color;
     accKey = GetAcceleratorKeyAndLength(text, &length);
 
     listItem->AcceleratorKey = accKey;
@@ -169,16 +171,13 @@ void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey)
 
     unsigned char handled = 0;
 
+    // printf("\n&pullDM:%x - &pressedKey:%x\n", pullDownMenu, &pressedKey);
+    // printf("------------------------------------------------------\n");
+
     while (menuItem != NULL)
     {
         if (menuItem->ListItem->AcceleratorKey == pressedKey)
         {
-            // printf(
-            //     "Found menu:%s w/ key:%i and 1. subitem: %s\n",
-            //     menuItem->ListItem->Text,
-            //     menuItem->ListItem->AcceleratorKey,
-            //     menuItem->SubItem->ListItem->Text);
-
             OpenMenu(menuItem);
             break;
         }
@@ -187,7 +186,7 @@ void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey)
     }
 }
 
-Listbox *InitList(char *title)
+Listbox *InitList(char *title, unsigned char color)
 {
     Listbox *listbox;
     ListItem *listItem;
@@ -198,6 +197,7 @@ Listbox *InitList(char *title)
     listbox->Count = 0;
     listbox->ReservedCount = 4;
     listbox->ListItems = malloc(sizeof(ListItem) * 4);
+    listbox->Color = color;
 
     return listbox;
 }
@@ -238,7 +238,7 @@ unsigned char OpenMenu(MenuItem *menuItem)
         return NULL;
     }
 
-    listbox = InitList(NULL);
+    listbox = InitList(NULL, menuItem->ListItem->Color);
     currentMenuItem = menuItem->SubItem;
 
     // Convert the menu items to a listbox:
@@ -278,11 +278,13 @@ unsigned char HandleListBox(Listbox *listbox)
     ++height;
     left = listbox->Left;
 
-    DrawWindow(left, listbox->Top, listbox->Width + 3, height, color);
+    DrawWindow(left, listbox->Top, listbox->Width + 3, height, listbox->Color);
     left += 2;
 
     for (i = 0; i < listbox->Count; i++)
     {
-        DrawUIText(listbox->ListItems[i].Text, left, i + 2, color);
+        ListItem listItem;
+        listItem = listbox->ListItems[i];
+        DrawUIText(listItem.Text, left, i + 2, listItem.Color);
     }
 }
