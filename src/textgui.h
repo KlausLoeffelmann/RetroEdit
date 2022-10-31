@@ -22,6 +22,7 @@ struct TextWindow
     unsigned char Height;
     unsigned char CurrentLine;
     unsigned char CurrentColumn;
+    unsigned char Color;
 };
 
 struct ListItem
@@ -34,6 +35,7 @@ struct ListItem
     unsigned char CtrlKeyboardShortCut;
     unsigned char AcceleratorKey;
     unsigned char TextLength;
+    unsigned char Color;
 };
 
 struct Listbox
@@ -47,6 +49,7 @@ struct Listbox
     unsigned char Top;
     unsigned char MaxHeight;
     unsigned char Width;
+    unsigned char Color;
 };
 
 struct MenuItem
@@ -68,8 +71,8 @@ void InitPullDownMenu(PullDownMenu *pullDownMenu);
 unsigned char GetAcceleratorKeyAndLength(register char *text, unsigned char *length);
 void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey);
 void HandlePullDownMenu(PullDownMenu *pullDownMenu, char pressedKey);
-Listbox* InitList(char *title);
+Listbox *InitList(char *title, unsigned char color);
 void AddListItem(Listbox *listbox, ListItem *listItem);
 unsigned char OpenMenu(MenuItem *menuItem);
-MenuItem *DefineMenuItem(char *text, unsigned char id, unsigned char itemStatus, unsigned char ctrlKeyboardShortCut);
+MenuItem *DefineMenuItem(char *text, unsigned char id, unsigned char itemStatus, unsigned char ctrlKeyboardShortCut, unsigned char color);
 unsigned char HandleListBox(Listbox *listbox);

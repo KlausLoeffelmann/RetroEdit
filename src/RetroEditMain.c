@@ -45,15 +45,17 @@ void DefinePullDownMenu()
 		*editCutMenuItem, *editCopyMenuItem, *editPasteMenuItem;
 
 	// Defining File menu.
-	fileMenu = DefineMenuItem("&File", 0, 0, 0);
-	fileNewProjectMenuItem = DefineMenuItem("&New project...", 0, 0, 0);
-	fileOpenProjectMenuItem = DefineMenuItem("&Open project...", 0, 0, 0);
-	fileAddNewItemMenuItem = DefineMenuItem("&Add new item...", 0, 0, "a");
-	fileSeperator1MenuItem = DefineMenuItem("-", 0, 0, 0);
-	fileSaveMenuItem = DefineMenuItem("Save file", 0, 0, "s");
-	fileSaveAsMenuItem = DefineMenuItem("&Save file as...", 0, 0, 0);
-	fileSeperator2MenuItem = DefineMenuItem("-", 0, 0, 0);
-	fileExitMenuItem = DefineMenuItem("E&xit", 0, 0, 0);
+	unsigned char color=13;
+
+	fileMenu = DefineMenuItem("&File", 0, 0, 0, color);
+	fileNewProjectMenuItem = DefineMenuItem("&New project...", 0, 0, 0, color);
+	fileOpenProjectMenuItem = DefineMenuItem("&Open project...", 0, 0, 0, color);
+	fileAddNewItemMenuItem = DefineMenuItem("&Add new item...", 0, 0, "a", color);
+	fileSeperator1MenuItem = DefineMenuItem("-", 0, 0, 0, color);
+	fileSaveMenuItem = DefineMenuItem("Save file", 0, 0, "s", color);
+	fileSaveAsMenuItem = DefineMenuItem("&Save file as...", 0, 0, 0, color);
+	fileSeperator2MenuItem = DefineMenuItem("-", 0, 0, 0, color);
+	fileExitMenuItem = DefineMenuItem("E&xit", 0, 0, 0, color);
 
 	// Chaining File menu:
 	fileMenu->SubItem = fileNewProjectMenuItem;
@@ -67,13 +69,13 @@ void DefinePullDownMenu()
 	fileExitMenuItem->NextItem = NULL;
 
 	// Defining Edit menu.
-	editMenu = DefineMenuItem("&Edit", 0, 0, 0);
-	editUndoMenuItem = DefineMenuItem("&Undo", 0, 0, "z");
-	editRedoMenuItem = DefineMenuItem("&Redo", 0, 0, "r");
-	editSeperator1MenuItem = DefineMenuItem("-", 0, 0, 0);
-	editCutMenuItem = DefineMenuItem("Cut", 0, 0, "x");
-	editCopyMenuItem = DefineMenuItem("Copy", 0, 0, "c");
-	editPasteMenuItem = DefineMenuItem("Pa&ste", 0, 0, "v");
+	editMenu = DefineMenuItem("&Edit", 0, 0, 0, color);
+	editUndoMenuItem = DefineMenuItem("&Undo", 0, 0, "z", color);
+	editRedoMenuItem = DefineMenuItem("&Redo", 0, 0, "r", color);
+	editSeperator1MenuItem = DefineMenuItem("-", 0, 0, 0, color);
+	editCutMenuItem = DefineMenuItem("Cut", 0, 0, "x", color);
+	editCopyMenuItem = DefineMenuItem("Copy", 0, 0, "c", color);
+	editPasteMenuItem = DefineMenuItem("Pa&ste", 0, 0, "v", color);
 
 	// Chaining of Edit-Menu:
 	editMenu->SubItem = editUndoMenuItem;

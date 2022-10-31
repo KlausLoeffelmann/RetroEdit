@@ -66,7 +66,7 @@ petsciiToSCode:
 		        cmp #$c0		; if A<192 then...
 		        bcc sml192
 		        cmp #$ff		; if A<255 then...
-		        bcc sml32               ; same as A<32.
+		        bcc sml32       ; same as A<32.
 		        lda #$7e		; A=255, then A=126
 		        rts
 
@@ -102,10 +102,10 @@ hCharRepeat:
                 tax                     ; becomes index into lineBeginnings
                 clc
                 lda #<(SCREENMEM-1)     ; Low- and High byte into the zeropage pointer
-                adc lineBeginnings, x
+                adc lineOffsets, x
                 sta ptr1
                 lda #>(SCREENMEM-1)
-                adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
+                adc lineOffsets+1, x ; Add with carry - so prev. low-byte overflow 
                 sta ptr1+1              ; is taken into account.
                 clc
                 lda ptr1                ; add xPos
@@ -135,10 +135,10 @@ vCharRepeat:
                 tax                     ; becomes index into lineBeginnings
                 clc
                 lda #<(SCREENMEM)     ; Low- and High byte into the zeropage pointer
-                adc lineBeginnings, x
+                adc lineOffsets, x
                 sta ptr1
                 lda #>(SCREENMEM)
-                adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
+                adc lineOffsets+1, x ; Add with carry - so prev. low-byte overflow 
                 sta ptr1+1              ; is taken into account.
                 clc
                 lda ptr1                ; add xPos
@@ -177,10 +177,10 @@ sCharOut:
                 tax                     ; becomes index into lineBeginnings
                 clc
                 lda #<(SCREENMEM)       ; Low- and High byte into the zeropage pointer
-                adc lineBeginnings, x
+                adc lineOffsets, x
                 sta ptr1
                 lda #>(SCREENMEM)
-                adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
+                adc lineOffsets+1, x ; Add with carry - so prev. low-byte overflow 
                 sta ptr1+1              ; is taken into account.
                 clc
                 lda ptr1                ; add xPos
@@ -257,10 +257,10 @@ _ClearScreenEx:
                 tax                     ; becomes index into lineBeginnings
                 clc
                 lda #<(SCREENMEM-1)     ; Low- and High byte into the zeropage pointer
-                adc lineBeginnings, x
+                adc lineOffsets, x
                 sta ptr1
                 lda #>(SCREENMEM-1)
-                adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
+                adc lineOffsets+1, x ; Add with carry - so prev. low-byte overflow 
                 sta ptr1+1              ; is taken into account.
 
                 clc
@@ -307,7 +307,7 @@ skipInc2:       dex
 .endscope
 
 .rodata
-lineBeginnings: .word 00 * 40, 01 * 40, 02 * 40, 03 * 40, 04 * 40
+lineOffsets:    .word 00 * 40, 01 * 40, 02 * 40, 03 * 40, 04 * 40
                 .word 05 * 40, 06 * 40, 07 * 40, 08 * 40, 09 * 40 
                 .word 10 * 40, 11 * 40, 12 * 40, 13 * 40, 14 * 40
                 .word 15 * 40, 16 * 40, 17 * 40, 18 * 40, 19 * 40
@@ -418,11 +418,12 @@ _DrawWindow:
 .endscope
 
 ; Draw UIText - Draws string containing accelerator key - defined with "&"" - in revers. (&File, &OK, S&earch)
-;                  text=3/2             line=1           column=0               Akku
-; void DrawUIText(char *text, unsigned char line, unsigned char column, unsigned char color)
+;                  text=3/2         row=1             column=0           Akku: Bit 7 set: Invers Color, lower 4 Bit: actual color.
+; void DrawUIText(char *text, unsigned char row, unsigned char column, unsigned char color)
 _DrawUIText:
 .scope
-                color = tmp3
+                color = tmp1
+                ptrColor = ptr3
                 ptrString = ptr1
                 ptrScreen = ptr2
 .export _DrawUIText
@@ -440,23 +441,41 @@ _DrawUIText:
                 lda (sp), y             ; Get line Param.
                 rol                     ; *2
                 tax                     ; becomes index into lineBeginnings
+
+                ; ScreenMem+y*40;
                 clc
-                lda #<(SCREENMEM)     ; Low- and High byte into the zeropage pointer
-                adc lineBeginnings, x
+                lda #<(SCREENMEM)       ; Low- and High byte into the zeropage pointer
+                adc lineOffsets, x
                 sta ptrScreen
                 lda #>(SCREENMEM)
-                adc lineBeginnings+1, x ; Add with carry - so prev. low-byte overflow 
+                adc lineOffsets+1, x    ; Add with carry - so prev. low-byte overflow 
                 sta ptrScreen+1         ; is taken into account.
+
+                ; ColorMem+y*40;
+                clc
+                lda #<(COLORMEM)       ; Low- and High byte into the zeropage pointer
+                adc lineOffsets, x
+                sta ptrColor
+                lda #>(COLORMEM)
+                adc lineOffsets+1, x    ; Add with carry - so prev. low-byte overflow 
+                sta ptrColor+1         ; is taken into account.
 
                 clc
                 iny                      ; ScreenPtr+X1
                 lda ptrScreen
                 adc (sp),y
                 sta ptrScreen
-                bcc skipInc
+                bcc skipIncSm
                 inc ptrScreen+1
 
-skipInc:        ldy #0
+skipIncSm:      clc                     ; ColorPtr+X1
+                lda ptrColor
+                adc (sp),y
+                sta ptrColor
+                bcc skipIncCm
+                inc ptrColor+1
+
+skipIncCm:      ldy #0
                 ldx #0
                 clc
 loop:           lda (ptrString),y       ; Get the first char
@@ -467,20 +486,30 @@ loop:           lda (ptrString),y       ; Get the first char
                 jmp nextCharS2
 nextCharS1:     pha
                 lda ptrScreen
-                bne nonEqual
+                bne nonEqualM
                 dec ptrScreen+1
-nonEqual:       dec ptrScreen
+nonEqualM:      dec ptrScreen
+                lda ptrColor
+                bne nonEqualC
+                dec ptrColor+1
+nonEqualC:      dec ptrColor
                 pla
                 jmp nextChar                
 nextCharS2:     clc                     ; Might have been >'&'', so the Carry has to recleared.
 skipRevTest:    php                     ; We need the original Carry
                 jsr petsciiToSCode      ; Convert to Screencode
-                plp                     ; Carry says, if we need to invert
-                bcc skipRevChar         ; carry was clear, so there wasn't an Ampersand
-                clc                     ; carry was set, we need to revert, but with clear Carry.
-                adc #128                ; +128 equals the revert char.
-                clc
-skipRevChar:    sta (ptrScreen),y
+                plp                     ; Carry says that we need to invert
+                bcc skipRevChar         ; Carry was clear, so there wasn't an ampersand
+                clc                     ; Carry was set, we need to revert, but with clear Carry.
+                adc #$80                ; +0x80 equals the revert char.
+skipRevChar:    bit color               ; Sets N, when bit 7 is set in color.
+                bpl doNotadd
+                adc #$80                ; We're reversing when bit 7 of color is set.
+doNotadd:       clc
+                sta (ptrScreen),y
+                lda color
+                and #%00001111          ; Only the lower 4 bit contain col info.
+                sta (ptrColor), y
                 inx                     ; char count without '&'
 nextChar:       iny
                 bne loop
@@ -489,7 +518,7 @@ finish:         txa
                 ldy #5                  ; 4 Params, but 1 is pointer.
                 jmp cleanCStack
 .endscope
-
+    
 ; GetUITextLength - Calculates length of string containing accelerator key - defined with "&"" - in revers. (&File, &OK, S&earch)
 ;                          ptrText=1/0
 ; unsigned char DrawUIText(char *text)
