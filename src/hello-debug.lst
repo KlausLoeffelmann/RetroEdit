@@ -1,0 +1,721 @@
+###############################################################################
+#                                                                             #
+# Calypsi linker for 6502                                         version 5.3 #
+#                                                       04/May/2024  15:56:22 #
+# Command line: linker.scm --debug -o hello.elf obj/main-debug.o              #
+#               --list-file=hello-debug.lst --semi-hosted --verbose           #
+#                                                                             #
+###############################################################################
+
+####################
+#                  #
+# Memories summary #
+#                  #
+####################
+
+Name      Range     Size    Used    Checksum  Largest unallocated
+-----------------------------------------------------------------
+zeroPage  0002-007f 007e     42.9%  none      0048
+stackPage 0100-01ff 0100    100.0%  none      none
+RAM       0200-7fff 7e00      7.8%  none      741d
+flash     8000-ffff 8000      9.9%  none      7355
+
+
+####################
+#                  #
+# Sections summary #
+#                  #
+####################
+
+Name            Range      Size    Memory    Fragments
+------------------------------------------------------
+registers       0002-0037  0036    zeroPage  1
+stack           0100-01ff  0100    stackPage 1
+cstack          0200-09ff  0800    RAM       1
+heap            0a00-0aff  0100    RAM       1
+zdata           0b00-0be2  00e3    RAM       9
+code            8000-8c92  0c93    flash     39
+data_init_table 8c93-8c98  0006    flash     1
+code            8c99-8ca6  000e    flash     5
+reset           fffc-fffd  0002    flash     1
+
+
+###################
+#                 #
+# Placement rules #
+#                 #
+###################
+
+Name               Address range  Key
+----------------------------------------------------------------------
+RAM                0200-7fff      
+  > cstack
+  > data
+  > zdata
+  > heap
+flash              8000-ffff      
+  > code
+  > idata
+  > cdata
+  > switch
+  > data_init_table
+  > (reset fffc)
+stackPage          0100-01ff      
+  > stack
+  stackPage-nobits 0100-01ff      BSS
+    > 
+zeroPage           0002-007f      ZPage
+  > (registers 0002)
+  zeroPage-nobits  0002-007f      ZPage and BSS
+    > 
+
+Name   Size Align
+------------------
+cstack 0800 no
+stack  0100 no
+heap   0100 no
+
+################
+#              #
+# Object files #
+#              #
+################
+
+Unit Filename          Archive
+----------------------------------
+  0  obj/main-debug.o  -
+          >  code 002a
+  2  cstartup.o        clib-6502.a
+          # picked based on cstartup=normal (built-in default)
+          >  code  0049
+          >  reset 0002
+  3  exit.o            clib-6502.a
+          # picked based on exit=stdexit (built-in default)
+          >  code 006b
+  5  pseudoRegisters.o clib-6502.a
+          >  registers 0036
+  6  controlFlow.o     clib-6502.a
+          >  code 0003
+  7  atexit.o          clib-6502.a
+          >  code  0031
+          >  zdata 0042
+  8  enter.o           clib-6502.a
+          >  code 004d
+  9  exitC99.o         clib-6502.a
+          >  code 0004
+ 11  debug_exit.o      clib-6502.a
+          # picked based on stubs=semi_hosted (due to configured to use semi-hosting)
+          >  code 0022
+ 12  debug_break.o     clib-6502.a
+          # picked based on stubs=semi_hosted (due to configured to use semi-hosting)
+          >  code 0001
+ 13  streamlist.o      clib-6502.a
+          >  code  00c7
+          >  zdata 0039
+ 14  debug_close.o     clib-6502.a
+          # picked based on stubs=semi_hosted (due to configured to use semi-hosting)
+          >  code 0038
+ 15  lib_fflush.o      clib-6502.a
+          >  code 0040
+ 16  errno.o           clib-6502.a
+          >  zdata 0002
+ 17  lib_libfflush.o   clib-6502.a
+          >  code 019d
+ 18  debug_write.o     clib-6502.a
+          # picked based on stubs=semi_hosted (due to configured to use semi-hosting)
+          >  code 004e
+ 19  lib_libflushall.o clib-6502.a
+          >  code 0077
+ 20  lib_fclose.o      clib-6502.a
+          >  code 01cd
+ 21  free.o            clib-6502.a
+          >  code 0154
+ 22  addfreechunk.o    clib-6502.a
+          >  code 0120
+ 23  heap_initialize.o clib-6502.a
+          >  code  023e
+          >  zdata 0066
+ 24  lib_memset.o      clib-6502.a
+          >  code 0038
+ 25  initialize.o      clib-6502.a
+          # picked based on initialize=normal (built-in default)
+          >  code 0081
+ 26  lib_memcpy.o      clib-6502.a
+          >  code 0042
+
+###################
+#                 #
+# Cross reference #
+#                 #
+###################
+
+Section 'cstack'  placed at address 0200-09ff of size 0800 (linker generated)
+
+Section 'heap'  placed at address 0a00-0aff of size 0100 (linker generated)
+
+__default_heap in section 'zdata'  placed at address 0b00-0b65 of size 0066
+(heap_initialize.o (from clib-6502.a) unit 23 section index 6)
+    Defines:
+        __default_heap = 0b00
+    Referenced from:
+        __call_heap_initialize (cstartup.o (from clib-6502.a) unit 2 section index 5)
+        free (free.o (from clib-6502.a) unit 21 section index 2)
+
+__atexit_index in section 'zdata'  placed at address 0b66-0b67 of size 0002
+(atexit.o (from clib-6502.a) unit 7 section index 3)
+    Defines:
+        __atexit_index = 0b66
+    Referenced from:
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+        atexit (atexit.o (from clib-6502.a) unit 7 section index 4)
+
+__atexit in section 'zdata'  placed at address 0b68-0ba7 of size 0040
+(atexit.o (from clib-6502.a) unit 7 section index 2)
+    Defines:
+        __atexit = 0b68
+    Referenced from:
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+        atexit (atexit.o (from clib-6502.a) unit 7 section index 4)
+
+__global_streams in section 'zdata'  placed at address 0ba8-0bb1 of size 000a
+(streamlist.o (from clib-6502.a) unit 13 section index 6)
+    Defines:
+        __global_streams = 0ba8
+    Referenced from:
+        (streamlist.o (from clib-6502.a) unit 13 section index 7)
+        __initialize_global_streams (streamlist.o (from clib-6502.a) unit 13 section index 8)
+        fflush (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+
+__stderr in section 'zdata'  placed at address 0bb2-0bc0 of size 000f
+(streamlist.o (from clib-6502.a) unit 13 section index 5)
+
+__stdout in section 'zdata'  placed at address 0bc1-0bcf of size 000f
+(streamlist.o (from clib-6502.a) unit 13 section index 4)
+
+__stdin in section 'zdata'  placed at address 0bd0-0bde of size 000f
+(streamlist.o (from clib-6502.a) unit 13 section index 3)
+
+_ExitCloseStreams in section 'zdata'  placed at address 0bdf-0be0 of size 0002
+(streamlist.o (from clib-6502.a) unit 13 section index 2)
+    Defines:
+        _ExitCloseStreams = 0bdf
+    Referenced from:
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+        __initialize_global_streams (streamlist.o (from clib-6502.a) unit 13 section index 8)
+
+errno in section 'zdata'  placed at address 0be1-0be2 of size 0002
+(errno.o (from clib-6502.a) unit 16 section index 2)
+    Defines:
+        errno = 0be1
+    Referenced from:
+        fflush (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+        (lib_fclose.o (from clib-6502.a) unit 20 section index 4)
+
+fclose in section 'code'  placed at address 8000-8188 of size 0189
+(lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+    Defines:
+        fclose = 8000
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Stub_close in (debug_close.o (from clib-6502.a) unit 14 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __global_streams in (streamlist.o (from clib-6502.a) unit 13 section index 6)
+        errno in (errno.o (from clib-6502.a) unit 16 section index 2)
+        fflush in (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+        free in (free.o (from clib-6502.a) unit 21 section index 2)
+
+__lib_fflush in section 'code'  placed at address 8189-8309 of size 0181
+(lib_libfflush.o (from clib-6502.a) unit 17 section index 2)
+    Defines:
+        __lib_fflush = 8189
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Stub_write in (debug_write.o (from clib-6502.a) unit 18 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        fflush (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+
+free in section 'code'  placed at address 830a-844a of size 0141
+(free.o (from clib-6502.a) unit 21 section index 2)
+    Defines:
+        free = 830a
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __addfreechunk in (addfreechunk.o (from clib-6502.a) unit 22 section index 3)
+        __default_heap in (heap_initialize.o (from clib-6502.a) unit 23 section index 6)
+    Referenced from:
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+
+__heap_addregion in section 'code'  placed at address 844b-8577 of size 012d
+(heap_initialize.o (from clib-6502.a) unit 23 section index 2)
+    Defines:
+        __heap_addregion = 844b
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __addfreechunk in (addfreechunk.o (from clib-6502.a) unit 22 section index 3)
+    Referenced from:
+        __heap_initialize (heap_initialize.o (from clib-6502.a) unit 23 section index 3)
+
+__heap_initialize in section 'code'  placed at address 8578-866b of size 00f4
+(heap_initialize.o (from clib-6502.a) unit 23 section index 3)
+    Defines:
+        __heap_initialize = 8578
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __heap_addregion in (heap_initialize.o (from clib-6502.a) unit 23 section index 2)
+        memset in (lib_memset.o (from clib-6502.a) unit 24 section index 2)
+    Referenced from:
+        __call_heap_initialize (cstartup.o (from clib-6502.a) unit 2 section index 5)
+
+__addfreechunk in section 'code'  placed at address 866c-8746 of size 00db
+(addfreechunk.o (from clib-6502.a) unit 22 section index 3)
+    Defines:
+        __addfreechunk = 866c
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __size2ndx in (addfreechunk.o (from clib-6502.a) unit 22 section index 2)
+    Referenced from:
+        free (free.o (from clib-6502.a) unit 21 section index 2)
+        __heap_addregion (heap_initialize.o (from clib-6502.a) unit 23 section index 2)
+
+__initialize_sections in section 'code'
+ placed at address 8747-87bd of size 0077
+(initialize.o (from clib-6502.a) unit 25 section index 2)
+    Defines:
+        __initialize_sections = 8747
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        memcpy in (lib_memcpy.o (from clib-6502.a) unit 26 section index 2)
+        memset in (lib_memset.o (from clib-6502.a) unit 24 section index 2)
+    Referenced from:
+        __data_initialization_needed (cstartup.o (from clib-6502.a) unit 2 section index 3)
+
+__lib_flushall in section 'code'  placed at address 87be-882b of size 006e
+(lib_libflushall.o (from clib-6502.a) unit 19 section index 2)
+    Defines:
+        __lib_flushall = 87be
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        fflush in (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+    Referenced from:
+        fflush (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+
+exit in section 'code'  placed at address 882c-8896 of size 006b
+(exit.o (from clib-6502.a) unit 3 section index 2)
+    Defines:
+        exit = 882c
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _Exit in (exitC99.o (from clib-6502.a) unit 9 section index 2)
+        _ExitCloseStreams in (streamlist.o (from clib-6502.a) unit 13 section index 2)
+        _JmpInd in (controlFlow.o (from clib-6502.a) unit 6 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __atexit in (atexit.o (from clib-6502.a) unit 7 section index 2)
+        __atexit_index in (atexit.o (from clib-6502.a) unit 7 section index 3)
+    Referenced from:
+        (cstartup.o (from clib-6502.a) unit 2 section index 6)
+
+closeAllStreams in section 'code'  placed at address 8897-88fd of size 0067
+(streamlist.o (from clib-6502.a) unit 13 section index 7)
+    References:
+        _AllocStackSave in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _RestoreRegisters in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Stub_close in (debug_close.o (from clib-6502.a) unit 14 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __global_streams in (streamlist.o (from clib-6502.a) unit 13 section index 6)
+        fflush in (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+
+__initialize_global_streams in section 'code'
+ placed at address 88fe-8958 of size 005b
+(streamlist.o (from clib-6502.a) unit 13 section index 8)
+    Defines:
+        __initialize_global_streams = 88fe
+    References:
+        _ExitCloseStreams in (streamlist.o (from clib-6502.a) unit 13 section index 2)
+        __global_streams in (streamlist.o (from clib-6502.a) unit 13 section index 6)
+
+_Stub_write in section 'code'  placed at address 8959-89a6 of size 004e
+(debug_write.o (from clib-6502.a) unit 18 section index 2)
+    Defines:
+        _Stub_write = 8959
+    References:
+        _AllocStack in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _DeallocStack in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _DebugBreak in (debug_break.o (from clib-6502.a) unit 12 section index 2)
+        _Vsp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        __lib_fflush (lib_libfflush.o (from clib-6502.a) unit 17 section index 2)
+
+__program_start in section 'code'  placed at address 89a7-89b4 of size 000e
+(cstartup.o (from clib-6502.a) unit 2 section index 2)
+    Defines:
+        __program_start = 89a7
+    References:
+        .sectionEnd(cstack)
+        .sectionEnd(stack)
+        _Vsp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __low_level_init in (cstartup.o (from clib-6502.a) unit 2 section index 7)
+    Referenced from:
+        __program_root_section (cstartup.o (from clib-6502.a) unit 2 section index 8)
+
+__data_initialization_needed in section 'code'
+ placed at address 89b5-89c7 of size 0013
+(cstartup.o (from clib-6502.a) unit 2 section index 3)
+    Defines:
+        __data_initialization_needed = 89b5
+    References:
+        .sectionEnd(data_init_table)
+        .sectionStart(data_init_table)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __initialize_sections in (initialize.o (from clib-6502.a) unit 25 section index 2)
+
+__call_heap_initialize in section 'code'
+ placed at address 89c8-89e2 of size 001b
+(cstartup.o (from clib-6502.a) unit 2 section index 5)
+    Defines:
+        __call_heap_initialize = 89c8
+    References:
+        .sectionSize(heap)
+        .sectionStart(heap)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __default_heap in (heap_initialize.o (from clib-6502.a) unit 23 section index 6)
+        __heap_initialize in (heap_initialize.o (from clib-6502.a) unit 23 section index 3)
+
+Section 'code'  placed at address 89e3-89ee of size 000c
+(cstartup.o (from clib-6502.a) unit 2 section index 6)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        exit in (exit.o (from clib-6502.a) unit 3 section index 2)
+        main in (obj/main-debug.o unit 0 section index 2)
+
+__size2ndx in section 'code'  placed at address 89ef-8a33 of size 0045
+(addfreechunk.o (from clib-6502.a) unit 22 section index 2)
+    Defines:
+        __size2ndx = 89ef
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        __addfreechunk (addfreechunk.o (from clib-6502.a) unit 22 section index 3)
+
+memcpy in section 'code'  placed at address 8a34-8a75 of size 0042
+(lib_memcpy.o (from clib-6502.a) unit 26 section index 2)
+    Defines:
+        memcpy = 8a34
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        __initialize_sections (initialize.o (from clib-6502.a) unit 25 section index 2)
+
+fflush in section 'code'  placed at address 8a76-8ab5 of size 0040
+(lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+    Defines:
+        fflush = 8a76
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __global_streams in (streamlist.o (from clib-6502.a) unit 13 section index 6)
+        __lib_fflush in (lib_libfflush.o (from clib-6502.a) unit 17 section index 2)
+        __lib_flushall in (lib_libflushall.o (from clib-6502.a) unit 19 section index 2)
+        errno in (errno.o (from clib-6502.a) unit 16 section index 2)
+    Referenced from:
+        (streamlist.o (from clib-6502.a) unit 13 section index 7)
+        __lib_flushall (lib_libflushall.o (from clib-6502.a) unit 19 section index 2)
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+
+_Stub_close in section 'code'  placed at address 8ab6-8aed of size 0038
+(debug_close.o (from clib-6502.a) unit 14 section index 2)
+    Defines:
+        _Stub_close = 8ab6
+    References:
+        _AllocStack in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _DeallocStack in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _DebugBreak in (debug_break.o (from clib-6502.a) unit 12 section index 2)
+        _Vsp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        (streamlist.o (from clib-6502.a) unit 13 section index 7)
+        __close (lib_fclose.o (from clib-6502.a) unit 20 section index 2)
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+
+memset in section 'code'  placed at address 8aee-8b25 of size 0038
+(lib_memset.o (from clib-6502.a) unit 24 section index 2)
+    Defines:
+        memset = 8aee
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        __heap_initialize (heap_initialize.o (from clib-6502.a) unit 23 section index 3)
+        __initialize_sections (initialize.o (from clib-6502.a) unit 25 section index 2)
+
+atexit in section 'code'  placed at address 8b26-8b56 of size 0031
+(atexit.o (from clib-6502.a) unit 7 section index 4)
+    Defines:
+        atexit = 8b26
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __atexit in (atexit.o (from clib-6502.a) unit 7 section index 2)
+        __atexit_index in (atexit.o (from clib-6502.a) unit 7 section index 3)
+
+_AllocStackSave in section 'code'  placed at address 8b57-8b82 of size 002c
+(enter.o (from clib-6502.a) unit 8 section index 2)
+    Defines:
+        _AllocStackSave = 8b57
+        _AllocStack = 8b71
+    References:
+        _Vsp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+        _Stub_exit (debug_exit.o (from clib-6502.a) unit 11 section index 2)
+        (streamlist.o (from clib-6502.a) unit 13 section index 7)
+        _Stub_close (debug_close.o (from clib-6502.a) unit 14 section index 2)
+        __lib_fflush (lib_libfflush.o (from clib-6502.a) unit 17 section index 2)
+        _Stub_write (debug_write.o (from clib-6502.a) unit 18 section index 2)
+        __lib_flushall (lib_libflushall.o (from clib-6502.a) unit 19 section index 2)
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+        __addfreechunk (addfreechunk.o (from clib-6502.a) unit 22 section index 3)
+        __heap_initialize (heap_initialize.o (from clib-6502.a) unit 23 section index 3)
+        __initialize_sections (initialize.o (from clib-6502.a) unit 25 section index 2)
+
+main in section 'code'  placed at address 8b83-8bac of size 002a
+(obj/main-debug.o unit 0 section index 2)
+    Defines:
+        main = 8b83
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        (cstartup.o (from clib-6502.a) unit 2 section index 6)
+
+_Stub_exit in section 'code'  placed at address 8bad-8bce of size 0022
+(debug_exit.o (from clib-6502.a) unit 11 section index 2)
+    Defines:
+        _Stub_exit = 8bad
+    References:
+        _AllocStack in (enter.o (from clib-6502.a) unit 8 section index 2)
+        _DeallocStack in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _DebugBreak in (debug_break.o (from clib-6502.a) unit 12 section index 2)
+        _Vsp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        _Exit (exitC99.o (from clib-6502.a) unit 9 section index 2)
+
+_DeallocStackRestore in section 'code'
+ placed at address 8bcf-8bef of size 0021
+(enter.o (from clib-6502.a) unit 8 section index 4)
+    Defines:
+        _RestoreRegisters = 8bd2
+        _DeallocStackRestore = 8bcf
+        _DeallocStack = 8be0
+    References:
+        _DeallocStack in (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Vsp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+        _DeallocStackRestore (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Stub_exit (debug_exit.o (from clib-6502.a) unit 11 section index 2)
+        (streamlist.o (from clib-6502.a) unit 13 section index 7)
+        _Stub_close (debug_close.o (from clib-6502.a) unit 14 section index 2)
+        __lib_fflush (lib_libfflush.o (from clib-6502.a) unit 17 section index 2)
+        _Stub_write (debug_write.o (from clib-6502.a) unit 18 section index 2)
+        __lib_flushall (lib_libflushall.o (from clib-6502.a) unit 19 section index 2)
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+        __addfreechunk (addfreechunk.o (from clib-6502.a) unit 22 section index 3)
+        __heap_initialize (heap_initialize.o (from clib-6502.a) unit 23 section index 3)
+        __initialize_sections (initialize.o (from clib-6502.a) unit 25 section index 2)
+
+`?L45` in section 'code'  placed at address 8bf0-8c0b of size 001c
+(lib_libfflush.o (from clib-6502.a) unit 17 section index 3)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+__close in section 'code'  placed at address 8c0c-8c1f of size 0014
+(lib_fclose.o (from clib-6502.a) unit 20 section index 2)
+    Defines:
+        __close = 8c0c
+    References:
+        _Stub_close in (debug_close.o (from clib-6502.a) unit 14 section index 2)
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        (streamlist.o (from clib-6502.a) unit 13 section index 9)
+
+`?L26` in section 'code'  placed at address 8c20-8c2f of size 0010
+(heap_initialize.o (from clib-6502.a) unit 23 section index 4)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L27` in section 'code'  placed at address 8c30-8c3c of size 000d
+(heap_initialize.o (from clib-6502.a) unit 23 section index 5)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L78` in section 'code'  placed at address 8c3d-8c47 of size 000b
+(lib_fclose.o (from clib-6502.a) unit 20 section index 4)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        errno in (errno.o (from clib-6502.a) unit 16 section index 2)
+
+`?L13` in section 'code'  placed at address 8c48-8c51 of size 000a
+(initialize.o (from clib-6502.a) unit 25 section index 3)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L21` in section 'code'  placed at address 8c52-8c5b of size 000a
+(free.o (from clib-6502.a) unit 21 section index 3)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L79` in section 'code'  placed at address 8c5c-8c65 of size 000a
+(lib_fclose.o (from clib-6502.a) unit 20 section index 5)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L22` in section 'code'  placed at address 8c66-8c6e of size 0009
+(free.o (from clib-6502.a) unit 21 section index 4)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L21` in section 'code'  placed at address 8c6f-8c77 of size 0009
+(lib_libflushall.o (from clib-6502.a) unit 19 section index 3)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L82` in section 'code'  placed at address 8c78-8c80 of size 0009
+(lib_fclose.o (from clib-6502.a) unit 20 section index 8)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L81` in section 'code'  placed at address 8c81-8c89 of size 0009
+(lib_fclose.o (from clib-6502.a) unit 20 section index 7)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+`?L80` in section 'code'  placed at address 8c8a-8c92 of size 0009
+(lib_fclose.o (from clib-6502.a) unit 20 section index 6)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+
+Section 'data_init_table'  placed at address 8c93-8c98 of size 0006
+(linker generated)
+
+`?L18` in section 'code'  placed at address 8c99-8c9d of size 0005
+(streamlist.o (from clib-6502.a) unit 13 section index 9)
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+        __close in (lib_fclose.o (from clib-6502.a) unit 20 section index 2)
+
+_Exit in section 'code'  placed at address 8c9e-8ca1 of size 0004
+(exitC99.o (from clib-6502.a) unit 9 section index 2)
+    Defines:
+        _Exit = 8c9e
+    References:
+        _Stub_exit in (debug_exit.o (from clib-6502.a) unit 11 section index 2)
+    Referenced from:
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+
+_JmpInd in section 'code'  placed at address 8ca2-8ca4 of size 0003
+(controlFlow.o (from clib-6502.a) unit 6 section index 2)
+    Defines:
+        _JmpInd = 8ca2
+    References:
+        _Zp in (pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Referenced from:
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+
+_DebugBreak in section 'code'  placed at address 8ca5-8ca5 of size 0001
+(debug_break.o (from clib-6502.a) unit 12 section index 2)
+    Defines:
+        _DebugBreak = 8ca5
+    Referenced from:
+        _Stub_exit (debug_exit.o (from clib-6502.a) unit 11 section index 2)
+        _Stub_close (debug_close.o (from clib-6502.a) unit 14 section index 2)
+        _Stub_write (debug_write.o (from clib-6502.a) unit 18 section index 2)
+
+__low_level_init in section 'code'  placed at address 8ca6-8ca6 of size 0001
+(cstartup.o (from clib-6502.a) unit 2 section index 7)
+    Defines:
+        __low_level_init = 8ca6
+    Referenced from:
+        __program_start (cstartup.o (from clib-6502.a) unit 2 section index 2)
+
+__program_root_section in section 'reset'
+ placed at address fffc-fffd of size 0002
+(cstartup.o (from clib-6502.a) unit 2 section index 8)
+    Defines:
+        __program_root_section = fffc
+    References:
+        __program_start in (cstartup.o (from clib-6502.a) unit 2 section index 2)
+
+Section 'stack'  placed at address 0100-01ff of size 0100 (linker generated)
+
+_Zp in section 'registers'  placed at address 0002-0037 of size 0036
+(pseudoRegisters.o (from clib-6502.a) unit 5 section index 2)
+    Defines:
+        _Zp = 0002
+        _Vsp = 0032
+        _Vfp = 0034
+        _Temp = 0036
+    Referenced from:
+        main (obj/main-debug.o unit 0 section index 2)
+        __program_start (cstartup.o (from clib-6502.a) unit 2 section index 2)
+        __data_initialization_needed (cstartup.o (from clib-6502.a) unit 2 section index 3)
+        __call_heap_initialize (cstartup.o (from clib-6502.a) unit 2 section index 5)
+        (cstartup.o (from clib-6502.a) unit 2 section index 6)
+        exit (exit.o (from clib-6502.a) unit 3 section index 2)
+        _JmpInd (controlFlow.o (from clib-6502.a) unit 6 section index 2)
+        atexit (atexit.o (from clib-6502.a) unit 7 section index 4)
+        _AllocStackSave (enter.o (from clib-6502.a) unit 8 section index 2)
+        _DeallocStackRestore (enter.o (from clib-6502.a) unit 8 section index 4)
+        _Stub_exit (debug_exit.o (from clib-6502.a) unit 11 section index 2)
+        (streamlist.o (from clib-6502.a) unit 13 section index 7)
+        (streamlist.o (from clib-6502.a) unit 13 section index 9)
+        _Stub_close (debug_close.o (from clib-6502.a) unit 14 section index 2)
+        fflush (lib_fflush.o (from clib-6502.a) unit 15 section index 2)
+        __lib_fflush (lib_libfflush.o (from clib-6502.a) unit 17 section index 2)
+        (lib_libfflush.o (from clib-6502.a) unit 17 section index 3)
+        _Stub_write (debug_write.o (from clib-6502.a) unit 18 section index 2)
+        __lib_flushall (lib_libflushall.o (from clib-6502.a) unit 19 section index 2)
+        (lib_libflushall.o (from clib-6502.a) unit 19 section index 3)
+        __close (lib_fclose.o (from clib-6502.a) unit 20 section index 2)
+        fclose (lib_fclose.o (from clib-6502.a) unit 20 section index 3)
+        (lib_fclose.o (from clib-6502.a) unit 20 section index 4)
+        (lib_fclose.o (from clib-6502.a) unit 20 section index 5)
+        (lib_fclose.o (from clib-6502.a) unit 20 section index 6)
+        (lib_fclose.o (from clib-6502.a) unit 20 section index 7)
+        (lib_fclose.o (from clib-6502.a) unit 20 section index 8)
+        free (free.o (from clib-6502.a) unit 21 section index 2)
+        (free.o (from clib-6502.a) unit 21 section index 3)
+        (free.o (from clib-6502.a) unit 21 section index 4)
+        __size2ndx (addfreechunk.o (from clib-6502.a) unit 22 section index 2)
+        __addfreechunk (addfreechunk.o (from clib-6502.a) unit 22 section index 3)
+        __heap_addregion (heap_initialize.o (from clib-6502.a) unit 23 section index 2)
+        __heap_initialize (heap_initialize.o (from clib-6502.a) unit 23 section index 3)
+        (heap_initialize.o (from clib-6502.a) unit 23 section index 4)
+        (heap_initialize.o (from clib-6502.a) unit 23 section index 5)
+        memset (lib_memset.o (from clib-6502.a) unit 24 section index 2)
+        __initialize_sections (initialize.o (from clib-6502.a) unit 25 section index 2)
+        (initialize.o (from clib-6502.a) unit 25 section index 3)
+        memcpy (lib_memcpy.o (from clib-6502.a) unit 26 section index 2)
+
+##########################
+#                        #
+# Memory sizes (decimal) #
+#                        #
+##########################
+
+Executable       (Text): 3241 bytes
+Data                   :  227 bytes
+Non-initialized        : 2614 bytes

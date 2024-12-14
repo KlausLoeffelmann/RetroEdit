@@ -1,0 +1,11 @@
+(define memories
+  '((memory flash (address (#x8000 . #xffff))
+            (section code idata cdata switch data_init_table (reset #xfffc)))
+    (memory zeroPage (address (#x2 . #x7f)) (type ram) (qualifier zpage)
+	    (section (registers #x2)))
+    (memory stackPage (address (#x100 . #x1ff)) (type ram))
+    (memory RAM (address (#x0200 . #x7fff))
+            (section cstack data zdata heap))
+    (block cstack (size #x800))
+    (block stack (size #x100))
+    ))
